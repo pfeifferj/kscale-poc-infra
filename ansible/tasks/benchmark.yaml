@@ -1,0 +1,43 @@
+- name: Install kube-burner binary
+  become: yes
+  ansible.builtin.shell: |
+    curl -LO https://github.com/cloud-bulldozer/kube-burner/releases/latest/download/kube-burner-linux-amd64
+    chmod +x kube-burner-linux-amd64
+    mv kube-burner-linux-amd64 /usr/local/bin/kube-burner
+  args:
+    executable: /bin/bash
+
+- name: Check if kube-burner is installed
+  ansible.builtin.command: kube-burner version
+  register: kube_burner_installed
+  failed_when: kube_burner_installed.rc != 0
+  ignore_errors: no
+
+- name: Prepare kube-burner configuration files
+  ansible.builtin.copy:
+    src: files/kube-burner-config.yaml
+    dest: /tmp/kube-burner-config.yaml
+
+- name: Run kube-burner on Karpenter cluster
+  ansible.builtin.shell: |
+    KUBECONFIG={{ clusters.karpenter.kubeconfig_path }} kube-burner init -c /tmp/kube-burner-config.yaml
+  register: benchmark_karpenter
+
+- name: Run kube-burner on CAS cluster
+  ansible.builtin.shell: |
+    KUBECONFIG={{ clusters.cas.kubeconfig_path }} kube-burner init -c /tmp/kube-burner-config.yaml
+  register: benchmark_cas
+
+- name: Collect benchmark results for Karpenter
+  ansible.builtin.fetch:
+    src: "{{ ansible_env.HOME }}/kube-burner-results-karpenter/"
+    dest: "./results/"
+    flat: yes
+  when: benchmark_karpenter is success
+
+- name: Collect benchmark results for CAS
+  ansible.builtin.fetch:
+    src: "{{ ansible_env.HOME }}/kube-burner-results-cas/"
+    dest: "./results/"
+    flat: yes
+  when: benchmark_cas is success

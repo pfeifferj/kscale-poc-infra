@@ -1,0 +1,24 @@
+# destroy clusters to clean up
+- name: Destroy clusters with Terraform
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform"
+    state: absent
+    purge_workspace: true
+    complex_vars: true
+    variables:
+      flavour: "bx2.2x8" 
+      ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
+      kube_version: "1.30.4"
+      resource_group: "{{ RESOURCE_GROUP_ID }}"
+      region: "us-south"
+      vpc_name: "kscale-workload-vpc"
+      vpc_id: "{{ VPC_ID }}"
+      worker_count: 1
+      worker_pool_count: 3
+      zones:
+        - name: us-south-1
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"
+        - name: us-south-2
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
+        - name: us-south-3
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"

@@ -1,0 +1,59 @@
+global:
+  measurements:
+    - name: podLatency
+    - name: serviceLatency 
+      svcTimeout: 5s
+  requestTimeout: 60s
+  gc: true
+  gcMetrics: false
+  gcTimeout: 1h
+  waitWhenFinished: true
+  clusterHealth: true
+
+jobs:
+- name: scale-up
+  jobType: create
+  namespace: autoscale-test
+  jobIterations: 240  # 240 iterations (every minute for 4 hours)
+  namespacedIterations: false
+  iterationsPerNamespace: 1
+  cleanup: true
+  podWait: true
+  waitWhenFinished: true
+  jobIterationDelay: 1m  # delay of 1 minute between iterations
+  objects:
+  - objectTemplate: deployment.yml
+    replicas: 5  # number of replicas per iteration
+    wait: true
+
+- name: scale-down
+  jobType: delete
+  namespace: autoscale-test
+  jobIterations: 240
+  namespacedIterations: false
+  jobIterationDelay: 1m
+  objects:
+  - kind: Deployment
+    labelSelector: {kube-burner-job: scale-up}
+    apiVersion: apps/v1
+
+- name: churn-workload
+  jobType: create
+  namespace: churn-test
+  churn: true
+  churnPercent: 10  # churn 10% of the workload
+  churnDuration: 4h  # total churn duration
+  churnDelay: 5m  # delay between churns
+  jobIterations: 100  # total iterations
+  namespacedIterations: true
+  iterationsPerNamespace: 1
+  objects:
+  - objectTemplate: deployment.yml
+    replicas: 3
+    wait: true
+
+metricsEndpoints:
+- prometheusURL: http://localhost:9090 # replace with ocp endpoint
+  indexer:
+    type: local
+    metricsDirectory: ./metrics

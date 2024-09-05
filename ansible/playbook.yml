@@ -1,0 +1,47 @@
+---
+- hosts: localhost
+  connection: local
+  vars_files:
+    -  secrets.yaml
+  gather_facts: no
+  vars:
+    clusters:
+      - karpenter
+      - cas
+
+  tasks:
+    - import_tasks: tasks/clusterbootstrap.yaml
+      tags:
+        - setup
+    - import_tasks: tasks/clusterconfig.yaml
+      ignore_errors: true
+      tags:
+        - config
+    
+    - name: Check if AUTO_RUN_BENCHMARK environment variable is set
+      set_fact:
+        auto_run_benchmark: "{{ lookup('env', 'AUTO_RUN_BENCHMARK') | default('false') }}"
+
+    - name: Prompt for manual start before benchmarking
+      pause:
+        prompt: "Press Enter to start benchmarking or Ctrl+C to abort..."
+      when: auto_run_benchmark == 'false'
+
+    - import_tasks: tasks/benchmark.yaml
+      ignore_errors: true
+      tags:
+        - benchmark
+
+    - name: Check if AUTO_RUN_TEARDOWN environment variable is set
+      set_fact:
+        auto_run_teardown: "{{ lookup('env', 'AUTO_RUN_TEARDOWN') | default('false') }}"
+
+    - name: Prompt for manual confirmation before teardown
+      pause:
+        prompt: "Press Enter to start teardown or Ctrl+C to abort..."
+      when: auto_run_teardown == 'false'
+
+    - import_tasks: tasks/clusterteardown.yaml
+      tags:
+        - teardown
+        

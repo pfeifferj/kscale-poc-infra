@@ -1,0 +1,34 @@
+# add helm repos for autoscalers
+- name: Add cluster autoscaler chart repo
+  kubernetes.core.helm_repository:
+    name: autoscaler
+    repo_url: "https://icr.io/helm/iks-charts"
+  when: cluster_name == 'cas'
+
+# deploy cluster autoscaler for "cas" cluster
+- name: Deploy Cluster Autoscaler
+  kubernetes.core.helm:
+    name: cas
+    chart_ref: autoscaler/cluster-autoscaler
+    release_namespace: cas
+    set_values:
+      - value: "'autoDiscovery.clusterName'={{ clusters['cas'] }}"
+        value_type: string
+  when: cluster_name == 'cas'
+
+# deploy karpenter for "karpenter" cluster
+- name: Deploy Karpenter Autoscaler
+  kubernetes.core.helm:
+    name: karpenter
+    chart_ref: pfeifferj/ibm-cloud-karpenter
+    release_namespace: karpenter
+  when: cluster_name == 'karpenter'
+
+# ensure the monitoring stack is configured with custom values or plugins
+- name: Configure Prometheus with custom values
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: stable/prometheus
+    release_namespace: monitoring
+    values:
+      scrape_configs: custom-scrape-config.yaml

@@ -1,0 +1,28 @@
+# originally from https://github.com/elmiko/openshift-lab-scaling/blob/devel/three-hour-scaling-test.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pykb-config
+  namespace: kb-burner
+data:
+  config.yaml: |
+    runs:
+      - iterations: 4
+        churn-duration: 10m
+        churn-delay: 15m
+      - iterations: 6
+        churn-duration: 10m
+        churn-delay: 45m
+      - iterations: 5
+        churn-duration: 10m
+        churn-delay: 30m
+      - iterations: 4
+        churn-duration: 10m
+        churn-delay: 15m
+      - iterations: 10
+        churn-duration: 10m
+        churn-delay: 45m
+      - iterations: 1
+        churn-duration: 10m
+        churn-delay: 30m
