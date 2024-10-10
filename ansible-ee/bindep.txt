@@ -1,0 +1,5 @@
+python-devel [platform:rpm compile]
+gcc [platform:rpm compile]
+libpq-devel [platform:rpm compile]
+openssh-clients
+podman

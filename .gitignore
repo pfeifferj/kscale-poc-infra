@@ -35,3 +35,24 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# venv
+kvant-venv
+
+# ansible-builder cache and output directories
+context/
+build/
+
+# execution environments
+execution-environment.tar
+
+# python virtual environments
+kscale-venv/
+.env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ansible-navigator artifacts
+*-artifact-*.json

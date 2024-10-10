@@ -1,0 +1,38 @@
+version: 3
+
+dependencies:
+  ansible_core:
+    package_pip: ansible-core
+  ansible_runner:
+    package_pip: ansible-runner
+  python: ../requirements.txt
+  system: bindep.txt
+  galaxy: ../collection-requirements.yml
+
+images:
+  base_image:
+    name: localhost/kscale-ee:latest
+
+options:
+  package_manager_path: /usr/bin/dnf
+
+additional_build_steps:
+  prepend_base:
+    - |
+      # Install dependencies required for building from source
+      RUN dnf install -y gcc make automake autoconf libtool wget python3-devel
+      RUN pip install --upgrade pip
+
+      # Download, build, and install Oniguruma from source
+      RUN wget https://github.com/kkos/oniguruma/releases/download/v6.9.8/onig-6.9.8.tar.gz \
+        && tar xzf onig-6.9.8.tar.gz \
+        && cd onig-6.9.8 \
+        && ./configure \
+        && make \
+        && make install \
+        && cd .. \
+        && rm -rf onig-6.9.8 onig-6.9.8.tar.gz
+
+      # Ensure libraries are linked
+      RUN ldconfig
+    - RUN dnf install -y --enablerepo=rhocp-4.16-for-rhel-9-x86_64-rpms  openshift-clients

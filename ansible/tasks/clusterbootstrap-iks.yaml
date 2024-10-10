@@ -1,0 +1,75 @@
+# create two clusters: one for karpenter, one for cas
+- name: Create clusters with Terraform
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform"
+    state: present
+    force_init: true
+    complex_vars: true
+    variables:
+      flavour: "bx2.2x8" 
+      ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
+      kube_version: "1.30.4"
+      resource_group: "{{ RESOURCE_GROUP_ID }}"
+      region: "us-south"
+      vpc_name: "kscale-workload-vpc"
+      vpc_id: "{{ VPC_ID }}"
+      worker_count: 1
+      worker_pool_count: 1
+      zones:
+        - name: us-south-1
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"
+        - name: us-south-2
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
+        - name: us-south-3
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
+
+- name: Get kubeconfig for clusters
+  command: terraform output -raw kubeconfig_{{ item }}
+  register: kubeconfig_output
+  loop:
+    - karpenter
+    - cas
+
+- name: Set kubeconfig for further tasks
+  set_fact:
+    "KUBECONFIG_{{ item | upper }}": "{{ kubeconfig_output.stdout }}"
+  loop:
+    - karpenter
+    - cas
+
+- name: Wait for cluster nodes to be ready
+  shell: |
+    kubectl get nodes --no-headers | awk '{print $2}' | grep -v 'Ready' | wc -l
+  register: nodes_not_ready
+  until: nodes_not_ready.stdout == "0"
+  retries: 20
+  delay: 30
+  loop:
+    - karpenter
+    - cas
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+
+- name: Deploy Prometheus for monitoring
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: stable/prometheus
+    release_namespace: monitoring
+    create_namespace: true
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+  loop:
+    - karpenter
+    - cas
+
+- name: Deploy baseline configuration for monitoring
+  kubernetes.core.helm:
+    name: baseline
+    chart_ref: '../../helm'
+    values:
+      cluster_name: "{{ item }}"
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+  loop:
+    - karpenter
+    - cas
