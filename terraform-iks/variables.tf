@@ -2,7 +2,6 @@ variable "ibmcloud_api_key" {
   type = string
 }
 
-
 variable "flavour" {
   type = string
 }
@@ -40,4 +39,9 @@ variable "zones" {
     name      = string
     subnet_id = string
   }))
+}
+
+variable "tag_uuid" {
+  description = "UUID used for tagging"
+  type        = string
 }

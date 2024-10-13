@@ -14,3 +14,6 @@ resource "ibm_container_vpc_cluster" "karpenter_cluster" {
     }
   }
 }
+
+
+# tag "karpenter-${var.tag_uuid}"

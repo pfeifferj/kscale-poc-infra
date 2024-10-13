@@ -1,27 +1,12 @@
 # create two clusters: one for karpenter, one for cas
 - name: Create clusters with Terraform
   community.general.terraform:
-    project_path: "{{ playbook_dir }}/../terraform"
+    project_path: "{{ playbook_dir }}/../terraform-eks"
     state: present
     force_init: true
     complex_vars: true
     variables:
-      flavour: "bx2.2x8" 
-      ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
-      kube_version: "1.30.4"
-      resource_group: "{{ RESOURCE_GROUP_ID }}"
-      region: "us-south"
-      vpc_name: "kscale-workload-vpc"
-      vpc_id: "{{ VPC_ID }}"
-      worker_count: 1
-      worker_pool_count: 1
-      zones:
-        - name: us-south-1
-          subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"
-        - name: us-south-2
-          subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
-        - name: us-south-3
-          subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
+      tag_uuid: "{{ tag_uuid }}"
 
 - name: Get kubeconfig for clusters
   command: terraform output -raw kubeconfig_{{ item }}
@@ -50,6 +35,40 @@
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
 
+- name: Create service account token for Prometheus
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: ServiceAccount
+    namespace: monitoring
+    name: prometheus-sa
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+  loop:
+    - karpenter
+    - cas
+
+- name: Retrieve the token for Prometheus SA
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    namespace: monitoring
+    label_selectors:
+      - "kubernetes.io/service-account.name=prometheus-sa"
+  register: prometheus_sa_token
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+  loop:
+    - karpenter
+    - cas
+
+- name: Set Prometheus token fact
+  set_fact:
+    "IKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
+  with_items: "{{ prometheus_sa_token.resources }}"
+  loop_control:
+    loop_var: cluster_name
+
+
 - name: Deploy Prometheus for monitoring
   kubernetes.core.helm:
     name: prometheus
@@ -62,14 +81,22 @@
     - karpenter
     - cas
 
-- name: Deploy baseline configuration for monitoring
-  kubernetes.core.helm:
-    name: baseline
-    chart_ref: '../../helm'
-    values:
-      cluster_name: "{{ item }}"
+- name: Get Prometheus endpoint
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Service
+    namespace: monitoring
+    name: prometheus-server
+  register: prometheus_svc
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
   loop:
     - karpenter
     - cas
+
+- name: Set Prometheus endpoint fact
+  set_fact:
+    "IKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
+  loop: "{{ prometheus_svc.resources }}"
+  loop_control:
+    loop_var: cluster_name

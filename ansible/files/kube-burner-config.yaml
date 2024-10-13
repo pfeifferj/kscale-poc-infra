@@ -1,5 +1,6 @@
 global:
   measurements:
+    - name: nodeLatency
     - name: podLatency
     - name: serviceLatency 
       svcTimeout: 5s
@@ -11,49 +12,83 @@ global:
   clusterHealth: true
 
 jobs:
-- name: scale-up
-  jobType: create
-  namespace: autoscale-test
-  jobIterations: 240  # 240 iterations (every minute for 4 hours)
-  namespacedIterations: false
-  iterationsPerNamespace: 1
-  cleanup: true
-  podWait: true
-  waitWhenFinished: true
-  jobIterationDelay: 1m  # delay of 1 minute between iterations
-  objects:
-  - objectTemplate: deployment.yml
-    replicas: 5  # number of replicas per iteration
-    wait: true
+  - name: api-intensive
+    jobIterations: 700
+    qps: 4
+    burst: 4
+    namespacedIterations: true
+    namespace: api-intensive
+    podWait: false
+    cleanup: true
+    waitWhenFinished: true
+    objects:
+      - objectTemplate: templates/deployment.yaml
+        replicas: 1 # 10
+      - objectTemplate: templates/configmap.yaml
+        replicas: 1
+      - objectTemplate: templates/secret.yaml
+        replicas: 1
+      - objectTemplate: templates/service.yaml
+        replicas: 1
 
-- name: scale-down
-  jobType: delete
-  namespace: autoscale-test
-  jobIterations: 240
-  namespacedIterations: false
-  jobIterationDelay: 1m
-  objects:
-  - kind: Deployment
-    labelSelector: {kube-burner-job: scale-up}
-    apiVersion: apps/v1
+  - name: api-intensive-patch
+    jobType: patch
+    jobIterations: 10
+    qps: 2
+    burst: 2
+    objects:
+      - kind: Deployment
+        objectTemplate: templates/deployment_patch_add_label.json
+        labelSelector: {kube-burner-job: api-intensive}
+        patchType: "application/json-patch+json"
+        apiVersion: apps/v1
+      - kind: Deployment
+        objectTemplate: templates/deployment_patch_add_pod_2.yaml
+        labelSelector: {kube-burner-job: api-intensive}
+        patchType: "application/apply-patch+yaml"
+        apiVersion: apps/v1
+      - kind: Deployment
+        objectTemplate: templates/deployment_patch_add_label.yaml
+        labelSelector: {kube-burner-job: api-intensive}
+        patchType: "application/strategic-merge-patch+json"
+        apiVersion: apps/v1
 
-- name: churn-workload
-  jobType: create
-  namespace: churn-test
-  churn: true
-  churnPercent: 10  # churn 10% of the workload
-  churnDuration: 4h  # total churn duration
-  churnDelay: 5m  # delay between churns
-  jobIterations: 100  # total iterations
-  namespacedIterations: true
-  iterationsPerNamespace: 1
-  objects:
-  - objectTemplate: deployment.yml
-    replicas: 3
-    wait: true
+  - name: api-intensive-remove
+    qps: 2
+    burst: 2
+    jobType: delete
+    waitForDeletion: true
+    objects:
+      - kind: Deployment
+        labelSelector: {kube-burner-job: api-intensive}
+        apiVersion: apps/v1
 
-metricsEndpoints:
-- prometheusURL: http://localhost:9090 # replace with ocp endpoint
-  indexer:
-    type: local
-    metricsDirectory: ./metrics
+  - name: ensure-pods-removal
+    qps: 10
+    burst: 10
+    jobType: delete
+    waitForDeletion: true
+    objects:
+      - kind: Pod
+        labelSelector: {kube-burner-job: api-intensive}
+
+  - name: remove-services
+    qps: 2
+    burst: 2
+    jobType: delete
+    waitForDeletion: true
+    objects:
+      - kind: Service
+        labelSelector: {kube-burner-job: api-intensive}
+
+  - name: remove-configmaps-secrets
+    qps: 2
+    burst: 2
+    jobType: delete
+    objects:
+      - kind: ConfigMap
+        labelSelector: {kube-burner-job: api-intensive}
+      - kind: Secret
+        labelSelector: {kube-burner-job: api-intensive}
+
+# set duration somehow

@@ -2,7 +2,7 @@
 - hosts: localhost
   connection: local
   vars_files:
-    -  secrets.yaml
+    - secrets.yaml
   gather_facts: no
   vars:
     clusters:
@@ -10,9 +10,18 @@
       - cas
 
   tasks:
-    - import_tasks: tasks/clusterbootstrap.yaml
+    - import_tasks: tasks/clusterbootstrap-iks.yaml
+      when: "'IBM_CLOUD' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
       tags:
         - setup
+        - ibm_cloud
+
+    - import_tasks: tasks/clusterbootstrap-eks.yaml
+      when: "'AWS' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      tags:
+        - setup
+        - aws
+
     - import_tasks: tasks/clusterconfig.yaml
       ignore_errors: true
       tags:
@@ -27,10 +36,19 @@
         prompt: "Press Enter to start benchmarking or Ctrl+C to abort..."
       when: auto_run_benchmark == 'false'
 
-    - import_tasks: tasks/benchmark.yaml
-      ignore_errors: true
+    - name: Include IBM Cloud benchmark tasks if enabled
+      include_tasks: tasks/benchmark.yaml
+      when: "'IBM_CLOUD' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
       tags:
         - benchmark
+        - ibm_cloud
+
+    - name: Include AWS benchmark tasks if enabled
+      include_tasks: tasks/benchmark.yaml
+      when: "'AWS' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      tags:
+        - benchmark
+        - aws
 
     - name: Check if AUTO_RUN_TEARDOWN environment variable is set
       set_fact:
@@ -41,7 +59,16 @@
         prompt: "Press Enter to start teardown or Ctrl+C to abort..."
       when: auto_run_teardown == 'false'
 
-    - import_tasks: tasks/clusterteardown.yaml
+    - name: Run IBM Cloud teardown if enabled
+      include_tasks: tasks/clusterteardown.yaml
+      when: "'IBM_CLOUD' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
       tags:
         - teardown
-        
+        - ibm_cloud
+
+    - name: Run AWS teardown if enabled
+      include_tasks: tasks/clusterteardown.yaml
+      when: "'AWS' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      tags:
+        - teardown
+        - aws

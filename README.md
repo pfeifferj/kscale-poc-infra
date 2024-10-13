@@ -66,24 +66,26 @@ ansible-navigator run <your-playbook.yml>
 
 ### Run specific plays
 
+Example:
+
 ```bash
-ansible-navigator run <your-playbook.yml>
+ansible-navigator run ansbile/playbook.yml --ask-vault-pass --tags "setup,aws"
+ansible-navigator run ansbile/playbook.yml --ask-vault-pass --tags "setup,ibm_cloud"
+
+--container-options "-v /path/on/local/machine:/path/in/container" # to send log files/metrics to host
 ```
 
-### Toggle manual confirmation
+### Environment Variables
 
 ```bash
-ansible-navigator run <your-playbook.yml>
+LOAD_TEST_TARGET=AWS
+LOAD_TEST_TARGET=IBM_CLOUD
+AUTO_RUN_BENCHMARK=true
+AUTO_RUN_TEARDOWN=false
 ```
 
-### Toggle IBM Cloud Load Tests
+Use `--penv` to pass the environment variables to ansible-navigator:
 
 ```bash
-ansible-navigator run <your-playbook.yml>
-```
-
-### Toggle AWS Load Tests
-
-```bash
-ansible-navigator run <your-playbook.yml>
+ansible-navigator run ansbile/playbook.yml --tags "setup,aws" --penv LOAD_TEST_TARGET --penv AUTO_RUN_TEARDOWN
 ```

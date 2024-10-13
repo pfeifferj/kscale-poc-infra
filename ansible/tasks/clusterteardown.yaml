@@ -22,3 +22,7 @@
           subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
         - name: us-south-3
           subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
+
+          # use tags to dynamically do this for what was deployed across clouds
+
+          # grab billing metrics from aws/ibm
