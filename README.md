@@ -56,10 +56,37 @@ EOF
 
 Note: An overview of all available options can be found under https://ansible.readthedocs.io/projects/navigator/settings/#execution-environment-image.
 
-2.4 Run playbooks with custom Execution Environment
+2.4 Set up vault for secrets
+
+Create a vault file:
 
 ```bash
-ansible-navigator run <your-playbook.yml>
+ansible-vault create secrets.yaml
+```
+
+Set required secret values:
+
+```yaml
+IBM_CLOUD_TOKEN: "redacted"
+RESOURCE_GROUP_ID: "redacted"
+VPC_ID: "redacted"
+SUBNET_ID:
+  US_SOUTH_1: "redacted"
+  US_SOUTH_2: "redacted"
+  US_SOUTH_3: "redacted"
+```
+
+Before executing the playbook with `ansible-navigator` export the password:
+
+```bash
+ISTCONTROL=ignorespace
+ export ANSIBLE_VAULT_PASSWORD=my_password
+```
+
+2.5 Run playbooks with custom Execution Environment
+
+```bash
+ansible-navigator run ansible/playbook.yml
 ```
 
 ## Experiment Configuration Options
@@ -69,8 +96,8 @@ ansible-navigator run <your-playbook.yml>
 Example:
 
 ```bash
-ansible-navigator run ansbile/playbook.yml --ask-vault-pass --tags "setup,aws"
-ansible-navigator run ansbile/playbook.yml --ask-vault-pass --tags "setup,ibm_cloud"
+ansible-navigator run ansible/playbook.yml --ask-vault-pass --tags "setup,aws"
+ansible-navigator run ansible/playbook.yml --ask-vault-pass --tags "setup,ibm_cloud"
 
 --container-options "-v /path/on/local/machine:/path/in/container" # to send log files/metrics to host
 ```
