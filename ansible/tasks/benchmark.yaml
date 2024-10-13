@@ -9,7 +9,7 @@
 
 - name: Prepare kube-burner configuration files
   ansible.builtin.copy:
-    src: files/kube-burner-config.yaml
+    src: files/kube-burner-generic.yaml # change this to run different experiment
     dest: /tmp/kube-burner-config.yaml
 
 - name: Copy metrics profile file

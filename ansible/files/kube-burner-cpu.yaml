@@ -1,0 +1,32 @@
+global:
+  duration: 1h
+  cleanup: true
+  measurements:
+    - name: nodeLatency
+    - name: podLatency
+    - name: serviceLatency 
+      svcTimeout: 5s
+  requestTimeout: 60s
+  gc: true
+  gcMetrics: false
+  gcTimeout: 1h
+  waitWhenFinished: true
+  clusterHealth: true
+
+jobs:
+  - name: cpu-intensive
+    jobIterations: 10
+    qps: 4
+    burst: 4
+    namespacedIterations: true
+    namespace: cpu-intensive
+    podWait: false
+    cleanup: true
+    waitWhenFinished: true
+    objects:
+      - objectTemplate: templates/heterogenous/deployment-cpu-s
+        replicas: 4  
+      - objectTemplate: templates/heterogenous/deployment-cpu-m
+        replicas: 4
+      - objectTemplate: templates/heterogenous/deployment-cpu-l
+        replicas: 4
