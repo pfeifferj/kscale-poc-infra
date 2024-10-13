@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: network-intensive-deployment
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: network-intensive
+  template:
+    metadata:
+      labels:
+        app: network-intensive
+    spec:
+      containers:
+      - name: network-intensive-container
+        image: networkstatic/iperf3:latest
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+        command: ["iperf3"]
+        args: ["-c", "iperf-server", "-t", "600"]

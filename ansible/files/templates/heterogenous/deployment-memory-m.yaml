@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: memory-heavy-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: memory-heavy-container
+        image: ghcr.io/vish/stress:latest
+        resources:
+          requests:
+            memory: "2Gi"
+          limits:
+            memory: "4Gi"
+        command: ["stress"]
+        args: ["--vm", "2", "--vm-bytes", "3G", "--timeout", "600"]
+      restartPolicy: Never
+  backoffLimit: 4
+  

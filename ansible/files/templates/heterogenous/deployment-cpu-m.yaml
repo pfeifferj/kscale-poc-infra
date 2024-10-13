@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-intensive-deployment
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: cpu-intensive
+  template:
+    metadata:
+      labels:
+        app: cpu-intensive
+    spec:
+      containers:
+      - name: cpu-intensive-container
+        image: ghcr.io/vish/stress:latest
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "1Gi"
+        command: ["stress"]
+        args: ["--cpu", "2", "--timeout", "600"]

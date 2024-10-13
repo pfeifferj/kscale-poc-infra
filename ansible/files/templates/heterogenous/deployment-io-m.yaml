@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: io-bound-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: io-bound
+  template:
+    metadata:
+      labels:
+        app: io-bound
+    spec:
+      containers:
+      - name: io-bound-container
+        image: busybox:latest
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: test-volume
+          mountPath: /data
+        command: ["/bin/sh"]
+        args: ["-c", "dd if=/dev/zero of=/data/testfile bs=1M count=1024 && sleep 600"]
+      volumes:
+      - name: test-volume
+        emptyDir: {}

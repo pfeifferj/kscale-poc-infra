@@ -81,6 +81,8 @@ SUBNET_ID:
   US_SOUTH_1: "redacted"
   US_SOUTH_2: "redacted"
   US_SOUTH_3: "redacted"
+AWS_ACCESS_KEY_ID: "redacted"
+AWS_SECRET_ACCESS_KEY: "redacted"
 ```
 
 Before executing the playbook with `ansible-navigator` export the password:

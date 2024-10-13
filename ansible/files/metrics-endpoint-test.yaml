@@ -1,5 +1,0 @@
-- endpoint: https://prometheus-k8s-openshift-monitoring.apps.ocp4-prd.josie.cloud
-  token: sha256~4qF1YLA1rqtsFY7JR2lNvrRKu382Y7q4CdMLK9F_zOc
-  metrics: [metrics-profiles/metrics-aggregated.yaml]
-  indexer:
-    type: local
