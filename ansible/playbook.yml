@@ -8,25 +8,57 @@
     clusters:
       - karpenter
       - cas
+    load_test_targets: "{{ lookup('env', 'LOAD_TEST_TARGET') | default('') | split(',') }}"
 
   tasks:
-    - import_tasks: tasks/clusterbootstrap-iks.yaml
-      when: "'IBM_CLOUD' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+    - name: Set fact for IBM and AWS tasks based on env
+      set_fact:
+        run_iks: "{{ 'IBM_CLOUD' in load_test_targets }}"
+        run_eks: "{{ 'AWS' in load_test_targets }}"
+
+    - name: Launch IBM Cloud bootstrap task if enabled
+      import_tasks: tasks/clusterbootstrap-iks.yaml
+      when: run_iks
       tags:
         - setup
         - ibm_cloud
+      async: 45
+      poll: 0
+      register: iks_bootstrap
 
-    - import_tasks: tasks/clusterbootstrap-eks.yaml
-      when: "'AWS' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+    - name: Launch AWS bootstrap task if enabled
+      import_tasks: tasks/clusterbootstrap-eks.yaml
+      when: run_eks
       tags:
         - setup
         - aws
+      async: 45
+      poll: 0
+      register: eks_bootstrap
+
+    - name: Wait for IBM Cloud bootstrap to finish
+      async_status:
+        jid: "{{ iks_bootstrap.ansible_job_id }}"
+        register: job_result_iks
+      when: run_iks
+      until: job_result_iks.finished
+      retries: 100
+      delay: 10
+
+    - name: Wait for AWS bootstrap to finish
+      async_status:
+        jid: "{{ eks_bootstrap.ansible_job_id }}"
+        register: job_result_eks
+      when: run_eks
+      until: job_result_eks.finished
+      retries: 100
+      delay: 10
 
     - import_tasks: tasks/clusterconfig.yaml
       ignore_errors: true
       tags:
         - config
-    
+
     - name: Check if AUTO_RUN_BENCHMARK environment variable is set
       set_fact:
         auto_run_benchmark: "{{ lookup('env', 'AUTO_RUN_BENCHMARK') | default('false') }}"
@@ -38,14 +70,14 @@
 
     - name: Include IBM Cloud benchmark tasks if enabled
       include_tasks: tasks/benchmark.yaml
-      when: "'IBM_CLOUD' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      when: run_iks
       tags:
         - benchmark
         - ibm_cloud
 
     - name: Include AWS benchmark tasks if enabled
       include_tasks: tasks/benchmark.yaml
-      when: "'AWS' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      when: run_eks
       tags:
         - benchmark
         - aws
@@ -61,14 +93,14 @@
 
     - name: Run IBM Cloud teardown if enabled
       include_tasks: tasks/clusterteardown.yaml
-      when: "'IBM_CLOUD' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      when: run_iks
       tags:
         - teardown
         - ibm_cloud
 
     - name: Run AWS teardown if enabled
       include_tasks: tasks/clusterteardown.yaml
-      when: "'AWS' in (lookup('env', 'LOAD_TEST_TARGET') | default(''))"
+      when: run_eks
       tags:
         - teardown
         - aws

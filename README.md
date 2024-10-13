@@ -1,14 +1,14 @@
-PoC automation suite for IKS config benchmarking
-
-currently deploys two IKS clusters, applies different autoscaling configs, runs benchmarks/collects metrics, and finally decomissions the clusters again.
-
 # Running Cluster Autoscaling Load Test Experiments
 
-<abstract>
+PoC automation suite for IKS config benchmarking.
+
+Deploys two IKS clusters, applies different autoscaling configs, runs benchmarks/collects metrics, and finally decomissions the clusters again.
+
+To compare benchmarks, EKS clusters can be deployed and tested against too.
 
 ## Prerequisites
 
-python & podman need to be installed on the system
+ansible, python & podman need to be installed on the system
 
 1.1 Clone this repository
 
@@ -32,6 +32,13 @@ pip install -r requirements.txt
 ```bash
 cd ansible-ee
 ansible-builder build -t kscale-ee --no-cache
+```
+
+Push ee image to container registry:
+
+```bash
+podman tag localhost/kscale-ee:latest quay.io/pfeifferj/kscale-ee:latest
+podman push quay.io/pfeifferj/kscale-ee:latest
 ```
 
 2.3 Configure ansible-navigator
@@ -105,9 +112,17 @@ ansible-navigator run ansible/playbook.yml --ask-vault-pass --tags "setup,ibm_cl
 ### Environment Variables
 
 ```bash
+# run on just one of the platforms
 LOAD_TEST_TARGET=AWS
 LOAD_TEST_TARGET=IBM_CLOUD
+
+# run on both
+LOAD_TEST_TARGET="IBM_CLOUD,AWS"
+
+# run benchmarks immediately after bootstrapping and config have finished
 AUTO_RUN_BENCHMARK=true
+
+# tear down all infra immediately after benchmarks have finished
 AUTO_RUN_TEARDOWN=false
 ```
 
