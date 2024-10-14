@@ -13,6 +13,9 @@ resource "ibm_container_vpc_cluster" "cas_cluster" {
       name      = zones.value["name"]
     }
   }
+  tags = {
+    tag = "cas-${var.tag_uuid}"
+  }
 }
 
 resource "ibm_container_vpc_worker_pool" "cas_pool" {

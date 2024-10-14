@@ -29,5 +29,8 @@ module "eks_al2" {
     }
   }
 
-  tags = local.tags
+  tags = {
+    tag = "cas-${var.tag_uuid}"
+  }
+  
 }

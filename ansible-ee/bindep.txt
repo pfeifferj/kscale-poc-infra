@@ -4,3 +4,5 @@ libpq-devel [platform:rpm compile]
 openssh-clients
 podman
 helm
+awscli
+ibmcloud

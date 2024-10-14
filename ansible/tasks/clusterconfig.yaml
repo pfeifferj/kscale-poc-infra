@@ -3,32 +3,69 @@
   kubernetes.core.helm_repository:
     name: autoscaler
     repo_url: "https://icr.io/helm/iks-charts"
-  when: cluster_name == 'cas'
 
-# deploy cluster autoscaler for "cas" cluster
-- name: Deploy Cluster Autoscaler
+# set fact for distinguishing between iks and eks clusters
+- name: Set fact for IBM and AWS tasks based on env
+  set_fact:
+    run_iks: "{{ 'IBM_CLOUD' in load_test_targets }}"
+    run_eks: "{{ 'AWS' in load_test_targets }}"
+    clusters_iks:
+      iks_karpenter: karpenter
+      iks_cas: cas
+    clusters_eks:
+      eks_karpenter: karpenter
+      eks_cas: cas
+
+# deploy cluster autoscaler for IBM Cloud IKS "cas" cluster
+- name: Deploy Cluster Autoscaler (IKS)
   kubernetes.core.helm:
     name: cas
     chart_ref: autoscaler/cluster-autoscaler
     release_namespace: cas
     set_values:
-      - value: "'autoDiscovery.clusterName'={{ clusters['cas'] }}"
+      - value: "'autoDiscovery.clusterName'={{ clusters_iks['iks_cas'] }}"
         value_type: string
-  when: cluster_name == 'cas'
+    environment:
+      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + 'iks_cas' | upper) }}"
+    when: run_iks
+    tags: 
+      - iks
 
-# deploy karpenter for "karpenter" cluster
-- name: Deploy Karpenter Autoscaler
+# deploy karpenter for IBM Cloud IKS "karpenter" cluster
+- name: Deploy Karpenter Autoscaler (IKS)
   kubernetes.core.helm:
     name: karpenter
     chart_ref: pfeifferj/ibm-cloud-karpenter
     release_namespace: karpenter
-  when: cluster_name == 'karpenter'
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + 'iks_karpenter' | upper) }}"
+  when: run_iks
+  tags:
+    - iks
 
-# ensure the monitoring stack is configured with custom values or plugins
-- name: Configure Prometheus with custom values
+# deploy cluster autoscaler for AWS EKS "cas" cluster
+- name: Deploy Cluster Autoscaler (EKS)
   kubernetes.core.helm:
-    name: prometheus
-    chart_ref: stable/prometheus
-    release_namespace: monitoring
-    values:
-      scrape_configs: custom-scrape-config.yaml
+    name: cas
+    chart_ref: autoscaler/cluster-autoscaler
+    release_namespace: cas
+    set_values:
+      - value: "'autoDiscovery.clusterName'={{ clusters_eks['eks_cas'] }}"
+        value_type: string
+    environment:
+      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + 'eks_cas' | upper) }}"
+    when: run_eks
+    tags:
+      - eks
+
+# deploy karpenter for AWS EKS "karpenter" cluster
+- name: Deploy Karpenter Autoscaler (EKS)
+  kubernetes.core.helm:
+    name: karpenter
+    chart_ref: pfeifferj/ibm-cloud-karpenter
+    release_namespace: karpenter
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + 'eks_karpenter' | upper) }}"
+  when: run_eks
+  tags:
+    - eks

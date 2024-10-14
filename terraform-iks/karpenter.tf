@@ -13,7 +13,8 @@ resource "ibm_container_vpc_cluster" "karpenter_cluster" {
       name      = zones.value["name"]
     }
   }
+
+  tags = {
+    tag = "karpenter-${var.tag_uuid}"
+  }
 }
-
-
-# tag "karpenter-${var.tag_uuid}"
