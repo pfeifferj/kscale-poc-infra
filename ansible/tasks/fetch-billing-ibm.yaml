@@ -1,19 +1,12 @@
-- name: Retrieve AWS billing metrics for resources with specific tags
+- name: Retrieve billing data using custom python script
   vars:
-    output_file: "ibm_billing_metrics.json"
+    output_file: "ibm_billing_metrics_{{ item }}.json"
     tag_key: "tag"
     tag_value: "{{ item }}-{{ tag_uuid }}"
+  ansible.builtin.command:
+    cmd: python3 files/fetch_billing_data_ibm.py --tag_key '{{ tag_key }}' --tag_value '{{ item }}-{{ tag_uuid }}' --api_key '{{ IBM_CLOUD_TOKEN }}' --output_file '{{ output_file }}'
+  register: billing_data
   loop:
     - karpenter
     - cas
-  block:
-    - name: Retrieve billing data using custom python script
-      ansible.builtin.command:
-        cmd: python3 fetch_billing_data_ibm.py --tag_key '{{ tag_key }}' --tag_value '{{ tag_value }}' --api_key '{{ IBM_CLOUD_TOKEN }}'
-      register: billing_data
-
-    - name: Write billing data to file
-      ansible.builtin.copy:
-        content: "{{ billing_data.stdout }}"
-        dest: "{{ output_file | replace('.json', '-'+item+'.json') }}"
-      when: billing_data is defined  
+  

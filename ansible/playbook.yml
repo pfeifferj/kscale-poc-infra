@@ -15,13 +15,48 @@
       set_fact:
         run_iks: "{{ 'IBM_CLOUD' in load_test_targets }}"
         run_eks: "{{ 'AWS' in load_test_targets }}"
+      tags:
+        - billing
+        - setup
+        - config 
+        - benchmark 
+        - teardown
+
+    - name: Debug load_test_targets
+      debug:
+        var: load_test_targets
+      tags:
+        - billing
+        - setup
+        - config 
+        - benchmark 
+        - teardown
+
+    - name: Generate UUID
+      ansible.builtin.command: uuidgen
+      register: generated_uuid
+      tags:
+        - billing
+        - setup
+        - config
+        - benchmark
+        - teardown
+
+    - name: Set UUID fact
+      ansible.builtin.set_fact:
+        tag_uuid: "{{ generated_uuid.stdout }}"
+      tags:
+        - billing
+        - setup
+        - config 
+        - benchmark 
+        - teardown
 
     - name: Launch IBM Cloud bootstrap task if enabled
       import_tasks: tasks/clusterbootstrap-iks.yaml
       when: run_iks
       tags:
         - setup
-        - ibm_cloud
       async: 45
       poll: 0
       register: iks_bootstrap
@@ -31,7 +66,6 @@
       when: run_eks
       tags:
         - setup
-        - aws
       async: 45
       poll: 0
       register: eks_bootstrap
@@ -73,22 +107,18 @@
       when: run_iks or run_eks
       tags:
         - benchmark
-        - ibm_cloud
-        - aws
 
     - name: Get IBM Cloud billing metrics
       import_tasks: tasks/fetch-billing-ibm.yaml
       when: run_iks
       tags:
         - billing
-        - ibm_cloud
 
     - name: Get AWS Cloud billing metrics
       import_tasks: tasks/fetch-billing-aws.yaml
       when: run_eks
       tags:
         - billing
-        - aws
 
     - name: Check if AUTO_RUN_TEARDOWN environment variable is set
       set_fact:
@@ -104,11 +134,9 @@
       when: run_iks
       tags:
         - teardown
-        - ibm_cloud
 
     - name: Run AWS teardown if enabled
       include_tasks: tasks/clusterteardown.yaml
       when: run_eks
       tags:
         - teardown
-        - aws

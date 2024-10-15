@@ -50,7 +50,11 @@ if __name__ == "__main__":
     parser.add_argument('--api_key', required=True, help='IBM Cloud API key')
     parser.add_argument('--tag_key', required=True, help='Tag key to filter')
     parser.add_argument('--tag_value', required=True, help='Tag value to filter')
+    parser.add_argument('--output_file', required=True, help='Output file to save the billing data')
     args = parser.parse_args()
 
     billing_data = fetch_billing_data_ibm(args.api_key, args.tag_key, args.tag_value)
-    print(json.dumps(billing_data, indent=4))
+    
+    # write the billing data to the specified output file
+    with open(args.output_file, 'w') as f:
+        json.dump(billing_data, f, indent=4)

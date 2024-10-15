@@ -1,11 +1,3 @@
-- name: Generate a UUID for tagging
-  ansible.builtin.command: uuidgen
-  register: generated_uuid
-
-- name: Set UUID fact
-  ansible.builtin.set_fact:
-    tag_uuid: "{{ generated_uuid.stdout }}"
-
 # create two clusters: one for karpenter, one for cas
 - name: Create clusters with Terraform
   community.general.terraform:
