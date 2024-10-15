@@ -1,7 +1,7 @@
 # destroy clusters to clean up
-- name: Destroy clusters with Terraform
+- name: Destroy IKS clusters with Terraform
   community.general.terraform:
-    project_path: "{{ playbook_dir }}/../terraform"
+    project_path: "{{ playbook_dir }}/../terraform-iks"
     state: absent
     purge_workspace: true
     complex_vars: true
@@ -25,4 +25,9 @@
 
           # use tags to dynamically do this for what was deployed across clouds
 
-          # grab billing metrics from aws/ibm
+- name: Destroy EKS clusters with Terraform
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-eks"
+    state: absent
+    purge_workspace: true
+    complex_vars: true

@@ -70,16 +70,24 @@
 
     - name: Include IBM Cloud benchmark tasks if enabled
       include_tasks: tasks/benchmark.yaml
-      when: run_iks
+      when: run_iks or run_eks
       tags:
         - benchmark
         - ibm_cloud
+        - aws
 
-    - name: Include AWS benchmark tasks if enabled
-      include_tasks: tasks/benchmark.yaml
+    - name: Get IBM Cloud billing metrics
+      import_tasks: tasks/fetch-billing-ibm.yaml
+      when: run_iks
+      tags:
+        - billing
+        - ibm_cloud
+
+    - name: Get AWS Cloud billing metrics
+      import_tasks: tasks/fetch-billing-aws.yaml
       when: run_eks
       tags:
-        - benchmark
+        - billing
         - aws
 
     - name: Check if AUTO_RUN_TEARDOWN environment variable is set

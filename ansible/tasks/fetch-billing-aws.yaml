@@ -2,7 +2,7 @@
   vars:
     aws_region: "us-east-1"
     output_file: "aws_billing_metrics.json"
-    tag_key: "Name"
+    tag_key: "tag"
     tag_value: "{{ item }}-{{ tag_uuid }}"
   loop:
     - karpenter
@@ -10,7 +10,7 @@
   block:
     - name: Retrieve billing data using custom python script
       ansible.builtin.command:
-        cmd: python3 fetch_billing_data.py --tag_key '{{ tag_key }}' --tag_value '{{ tag_value }}'
+        cmd: python3 fetch_billing_data_aws.py --tag_key '{{ tag_key }}' --tag_value '{{ tag_value }}' --access_key '{{ AWS_ACCESS_KEY_ID }}' --secret_key '{{ AWS_SECRET_ACCESS_KEY }}'
       register: billing_data
 
     - name: Write billing data to file
