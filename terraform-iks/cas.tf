@@ -1,5 +1,5 @@
 resource "ibm_container_vpc_cluster" "cas_cluster" {
-  name              = "cas"
+  name              = "cas-iks"
   vpc_id            = var.vpc_id
   flavor            = var.flavour
   kube_version      = var.kube_version

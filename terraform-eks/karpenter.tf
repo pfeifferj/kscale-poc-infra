@@ -6,7 +6,6 @@ provider "helm" {
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      # This requires the awscli to be installed locally where Terraform is executed
       args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
     }
   }
@@ -21,7 +20,6 @@ provider "kubectl" {
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    # This requires the awscli to be installed locally where Terraform is executed
     args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
 }
@@ -32,8 +30,8 @@ data "aws_ecrpublic_authorization_token" "token" {
 }
 
 locals {
-  name   = "ex-${basename(path.cwd)}"
-  region = "eu-west-1"
+  name   = "karpenter-eks"
+  region = "us-east-1"
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -52,7 +50,7 @@ module "eks" {
   version = "~> 20.0"
 
   cluster_name    = local.name
-  cluster_version = "1.30"
+  cluster_version = var.kube_version
 
   # Gives Terraform identity admin access to cluster which will
   # allow deploying resources (Karpenter) into the cluster
@@ -73,11 +71,11 @@ module "eks" {
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["m5.large"]
+      instance_types = [var.flavour]
 
-      min_size     = 2
-      max_size     = 3
-      desired_size = 2
+      min_size     = var.worker_pool_count
+      max_size     = var.worker_pool_count
+      desired_size = var.worker_pool_count
 
       taints = {
         # This Taint aims to keep just EKS Addons and Karpenter running on this MNG
@@ -249,6 +247,4 @@ module "vpc" {
     # Tags subnets for Karpenter auto-discovery
     "karpenter.sh/discovery" = local.name
   }
-
-  tags = local.tags
 }

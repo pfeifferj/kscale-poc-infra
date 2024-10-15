@@ -2,7 +2,7 @@ module "eks_al2" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "${local.name}-al2"
+  cluster_name    = "cas-eks"
   cluster_version = "1.30"
 
   # EKS Addons
@@ -19,18 +19,17 @@ module "eks_al2" {
   self_managed_node_groups = {
     example = {
       ami_type      = "AL2_x86_64"
-      instance_type = "m6i.large"
+      instance_type = "m5.large"
 
-      min_size = 2
-      max_size = 5
+      min_size = var.worker_pool_count
+      max_size = var.worker_pool_count
       # This value is ignored after the initial creation
       # https://github.com/bryantbiggs/eks-desired-size-hack
-      desired_size = 2
+      desired_size = var.worker_pool_count
     }
   }
 
   tags = {
     tag = "cas-${var.tag_uuid}"
   }
-  
 }

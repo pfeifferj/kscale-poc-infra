@@ -1,5 +1,5 @@
 resource "ibm_container_vpc_cluster" "karpenter_cluster" {
-  name              = "karpenter"
+  name              = "karpenter-iks"
   vpc_id            = var.vpc_id
   flavor            = var.flavour
   kube_version      = var.kube_version
