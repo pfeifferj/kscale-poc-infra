@@ -3,8 +3,8 @@ import json
 import argparse
 from datetime import datetime, timedelta
 
-def fetch_billing_data_ibm(api_key, tag_key, tag_value):
-    # get access token using the api key
+def fetch_billing_data_ibm(api_key, account_id, tag_value):
+    # get access token
     auth_url = "https://iam.cloud.ibm.com/identity/token"
     auth_headers = {
         "Content-Type": "application/x-www-form-urlencoded"
@@ -16,45 +16,53 @@ def fetch_billing_data_ibm(api_key, tag_key, tag_value):
     auth_response = requests.post(auth_url, headers=auth_headers, data=auth_data)
     access_token = auth_response.json()["access_token"]
 
-    # calculate the dynamic time period (today - 30 days)
+    # calculate date range
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=30)
     
-    # format the dates as required by IBM Cloud (ISO 8601 format)
     start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
     end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # define the usage url
-    billing_url = "https://billing.cloud.ibm.com/v4/accounts/{account_id}/usage"
+    # build usage url for the given month
+    billing_url = f"https://billing.cloud.ibm.com/v4/accounts/{account_id}/resource_instances/usage/{start_date.strftime('%Y-%m')}"
 
-    # headers for the api request
+    # headers
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
 
-    # params to filter by tag and time period
+    # params without tag filtering
     params = {
-        "resource_id": tag_key,
-        "resource_instance_name": tag_value,
-        "start": start_date_str,
-        "end": end_date_str
+        "names": True,   # get resource names
+        "limit": 100,    # pagination, adjust as needed
     }
 
-    # make the request
+    # fetch the data
     response = requests.get(billing_url, headers=headers, params=params)
-    return response.json()
+    
+    if response.status_code != 200:
+        raise Exception(f"Error fetching billing data: {response.status_code}, {response.text}")
+
+    data = response.json()
+
+    # filter resources based on tags
+    filtered_resources = [
+        resource for resource in data['resources']
+        if 'tags' in resource and tag_value in resource['tags']
+    ]
+
+    return filtered_resources
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--api_key', required=True, help='IBM Cloud API key')
-    parser.add_argument('--tag_key', required=True, help='Tag key to filter')
+    parser.add_argument('--account_id', required=True, help='IBM Cloud Account ID')
     parser.add_argument('--tag_value', required=True, help='Tag value to filter')
     parser.add_argument('--output_file', required=True, help='Output file to save the billing data')
     args = parser.parse_args()
 
-    billing_data = fetch_billing_data_ibm(args.api_key, args.tag_key, args.tag_value)
+    billing_data = fetch_billing_data_ibm(args.api_key, args.account_id, args.tag_value)
     
-    # write the billing data to the specified output file
     with open(args.output_file, 'w') as f:
         json.dump(billing_data, f, indent=4)

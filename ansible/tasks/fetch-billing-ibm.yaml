@@ -4,7 +4,7 @@
     tag_key: "tag"
     tag_value: "{{ item }}-{{ tag_uuid }}"
   ansible.builtin.command:
-    cmd: python3 files/fetch_billing_data_ibm.py --tag_key '{{ tag_key }}' --tag_value '{{ item }}-{{ tag_uuid }}' --api_key '{{ IBM_CLOUD_TOKEN }}' --output_file '{{ output_file }}'
+    cmd: python3 files/fetch_billing_data_ibm.py --tag_value '{{ item }}-{{ tag_uuid }}' --api_key '{{ IBM_CLOUD_TOKEN }}' --output_file '{{ output_file }}' --account_id '{{ IBM_CLOUD_ACCOUT_ID }}'
   register: billing_data
   loop:
     - karpenter
