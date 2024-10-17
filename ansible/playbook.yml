@@ -57,8 +57,6 @@
       when: run_iks
       tags:
         - setup
-      async: 45
-      poll: 0
       register: iks_bootstrap
 
     - name: Launch AWS bootstrap task if enabled
@@ -66,8 +64,6 @@
       when: run_eks
       tags:
         - setup
-      async: 45
-      poll: 0
       register: eks_bootstrap
 
     - name: Wait for IBM Cloud bootstrap to finish

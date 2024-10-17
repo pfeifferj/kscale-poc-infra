@@ -13,17 +13,20 @@
       kube_version: "1.30" # EKS only uspports major.minor
       worker_count: 1
       worker_pool_count: 3
-
-- name: Get kubeconfig for clusters
-  command: terraform output -raw kubeconfig_{{ item }}
-  register: kubeconfig_output
+      kube_config_path: "{{ playbook_dir }}"
+  ignore_errors: yes 
+  
+- name: Generate kubeconfig for EKS clusters
+  command: aws eks update-kubeconfig --name {{ item }} --region {{ region }} --kubeconfig {{ playbook_dir }}/{{ item }}-eks-kubeconfig
   loop:
     - karpenter
     - cas
+  register: eks_kubeconfig_output
+  changed_when: eks_kubeconfig_output.rc == 0
 
 - name: Set kubeconfig for further tasks
   set_fact:
-    "KUBECONFIG_{{ item | upper }}": "{{ kubeconfig_output.stdout }}"
+    "KUBECONFIG_{{ item | upper }}_EKS": "{{ playbook_dir }}/{{ item }}-eks-kubeconfig"
   loop:
     - karpenter
     - cas
@@ -39,7 +42,7 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -48,7 +51,7 @@
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
   loop:
     - karpenter
     - cas
@@ -62,18 +65,15 @@
       - "kubernetes.io/service-account.name=prometheus-sa"
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
   loop:
     - karpenter
     - cas
 
 - name: Set Prometheus token fact
   set_fact:
-    "IKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
+    "EKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
   with_items: "{{ prometheus_sa_token.resources }}"
-  loop_control:
-    loop_var: cluster_name
-
 
 - name: Deploy Prometheus for monitoring
   kubernetes.core.helm:
@@ -82,7 +82,7 @@
     release_namespace: monitoring
     create_namespace: true
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
   loop:
     - karpenter
     - cas
@@ -95,14 +95,12 @@
     name: prometheus-server
   register: prometheus_svc
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + cluster_name | upper) }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
   loop:
     - karpenter
     - cas
 
 - name: Set Prometheus endpoint fact
   set_fact:
-    "IKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
+    "EKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
   loop: "{{ prometheus_svc.resources }}"
-  loop_control:
-    loop_var: cluster_name

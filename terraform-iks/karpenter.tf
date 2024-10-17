@@ -14,7 +14,10 @@ resource "ibm_container_vpc_cluster" "karpenter_cluster" {
     }
   }
 
-  tags = {
-    tag = "karpenter-${var.tag_uuid}"
-  }
+  tags = ["karpenter-${var.tag_uuid}"]
+}
+
+data "ibm_container_cluster_config" "karpenter" {
+  cluster_name_id = ibm_container_vpc_cluster.karpenter_cluster.id
+  config_dir      = "${var.kube_config_path}/karpenter-iks-kubeconfig"
 }

@@ -45,3 +45,7 @@ variable "tag_uuid" {
   description = "UUID used for tagging"
   type        = string
 }
+
+variable "kube_config_path" {
+  type = string
+}

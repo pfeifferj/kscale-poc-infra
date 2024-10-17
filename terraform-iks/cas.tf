@@ -13,9 +13,8 @@ resource "ibm_container_vpc_cluster" "cas_cluster" {
       name      = zones.value["name"]
     }
   }
-  tags = {
-    tag = "cas-${var.tag_uuid}"
-  }
+  tags = ["cas-${var.tag_uuid}"]
+
 }
 
 resource "ibm_container_vpc_worker_pool" "cas_pool" {
@@ -32,4 +31,9 @@ resource "ibm_container_vpc_worker_pool" "cas_pool" {
       name      = zones.value["name"]
     }
   }
+}
+
+data "ibm_container_cluster_config" "cas" {
+  cluster_name_id = ibm_container_vpc_cluster.cas_cluster.id
+  config_dir      = "${var.kube_config_path}/cas-iks-kubeconfig"
 }
