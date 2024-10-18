@@ -66,26 +66,17 @@
         - setup
       register: eks_bootstrap
 
-    - name: Wait for IBM Cloud bootstrap to finish
-      async_status:
-        jid: "{{ iks_bootstrap.ansible_job_id }}"
-        register: job_result_iks
-      when: run_iks
-      until: job_result_iks.finished
-      retries: 100
-      delay: 10
-
-    - name: Wait for AWS bootstrap to finish
-      async_status:
-        jid: "{{ eks_bootstrap.ansible_job_id }}"
-        register: job_result_eks
-      when: run_eks
-      until: job_result_eks.finished
-      retries: 100
-      delay: 10
-
-    - import_tasks: tasks/clusterconfig.yaml
+    - name: Configure IKS Clusters
+      import_tasks: tasks/clusterconfig-iks.yaml
       ignore_errors: true
+      when: run_iks
+      tags:
+        - config
+
+    - name: Configure EKS Clusters
+      import_tasks: tasks/clusterconfig-eks.yaml
+      ignore_errors: true
+      when: run_eks
       tags:
         - config
 

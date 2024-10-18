@@ -92,7 +92,24 @@ ISTCONTROL=ignorespace
  export ANSIBLE_VAULT_PASSWORD=my_password
 ```
 
-2.5 Run playbooks with custom Execution Environment
+2.5 Set up IBM Cloud Client-to-Site VPN
+
+Optional if the IKS clusters are publically accessible.
+
+2.5.1 Get token from https://iam.cloud.ibm.com/identity/passcode
+
+2.5.2 Get VPN config bundle from IBM cloud console
+
+Example:
+https://cloud.ibm.com/infrastructure/network/vpnServers/us-south~r006-a54e1824-b6ce-4186-b3a0-41b9b57e5a98/clients
+
+2.5.3 Establish VPN connection
+
+```bash
+openvpn --config Downloads/kscale-c2s-vpn.ovpn
+```
+
+2.6 Run playbooks with custom Execution Environment
 
 ```bash
 ansible-navigator run ansible/playbook.yml

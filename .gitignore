@@ -56,3 +56,8 @@ __pycache__/
 
 # ansible-navigator artifacts
 *-artifact-*.json
+ansible/ansible-navigator.log
+
+# kubeconfigs
+ansible/files/karpenter-iks-kubeconfig/*
+ansible/files/cas-iks-kubeconfig/*
