@@ -13,11 +13,10 @@
       kube_version: "1.30" # EKS only uspports major.minor
       worker_count: 1
       worker_pool_count: 3
-      kube_config_path: "{{ playbook_dir }}"
   ignore_errors: yes 
-  
+
 - name: Generate kubeconfig for EKS clusters
-  command: aws eks update-kubeconfig --name {{ item }} --region {{ region }} --kubeconfig {{ playbook_dir }}/{{ item }}-eks-kubeconfig
+  command: aws eks update-kubeconfig --name {{ item }} --region {{ region }} --kubeconfig {{ playbook_dir }}/files/{{ item }}-eks-kubeconfig
   loop:
     - karpenter
     - cas
@@ -26,7 +25,7 @@
 
 - name: Set kubeconfig for further tasks
   set_fact:
-    "KUBECONFIG_{{ item | upper }}_EKS": "{{ playbook_dir }}/{{ item }}-eks-kubeconfig"
+    "KUBECONFIG_{{ item | upper }}_EKS": "{{ playbook_dir }}/files/{{ item }}-eks-kubeconfig"
   loop:
     - karpenter
     - cas

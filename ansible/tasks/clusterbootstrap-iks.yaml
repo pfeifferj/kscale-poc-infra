@@ -26,13 +26,22 @@
           subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
   ignore_errors: yes 
 
-- name: Set kubeconfig for further tasks
-  set_fact:
-    "KUBECONFIG_{{ item | upper }}_IKS": "{{ playbook_dir }}/{{ item }}-iks-kubeconfig"
+- name: Find kubeconfig for {{ item }}
+  find:
+    paths: "{{ playbook_dir }}/files/{{ item }}-iks-kubeconfig"
+    recurse: no
+    file_type: directory
   loop:
     - karpenter
     - cas
+  register: kubeconfig_dirs
 
+- name: Set kubeconfig for further tasks
+  set_fact:
+    "KUBECONFIG_{{ item.item | upper }}_IKS": "{{ item.files[0].path }}/config.yml"
+  loop: "{{ kubeconfig_dirs.results }}"
+  when: item.matched > 0
+  
 - name: Wait for cluster nodes to be ready
   shell: |
     kubectl get nodes --no-headers | awk '{print $2}' | grep -v 'Ready' | wc -l
@@ -45,64 +54,3 @@
     - cas
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
-
-- name: Create service account token for Prometheus
-  kubernetes.core.k8s:
-    api_version: v1
-    kind: ServiceAccount
-    namespace: monitoring
-    name: prometheus-sa
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
-  loop:
-    - karpenter
-    - cas
-
-- name: Retrieve the token for Prometheus SA
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    namespace: monitoring
-    label_selectors:
-      - "kubernetes.io/service-account.name=prometheus-sa"
-  register: prometheus_sa_token
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
-  loop:
-    - karpenter
-    - cas
-
-- name: Set Prometheus token fact
-  set_fact:
-    "IKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
-  with_items: "{{ prometheus_sa_token.resources }}"
-
-- name: Deploy Prometheus for monitoring
-  kubernetes.core.helm:
-    name: prometheus
-    chart_ref: stable/prometheus
-    release_namespace: monitoring
-    create_namespace: true
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
-  loop:
-    - karpenter
-    - cas
-
-- name: Get Prometheus endpoint
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Service
-    namespace: monitoring
-    name: prometheus-server
-  register: prometheus_svc
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
-  loop:
-    - karpenter
-    - cas
-
-- name: Set Prometheus endpoint fact
-  set_fact:
-    "IKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
-  loop: "{{ prometheus_svc.resources }}"
