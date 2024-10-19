@@ -35,5 +35,5 @@ resource "ibm_container_vpc_worker_pool" "cas_pool" {
 
 data "ibm_container_cluster_config" "cas" {
   cluster_name_id = ibm_container_vpc_cluster.cas_cluster.id
-  config_dir      = "${var.kube_config_path}/files/cas-iks-kubeconfig"
+  config_dir      = "${var.kube_config_path}/files/kubeconfig-iks-cas"
 }

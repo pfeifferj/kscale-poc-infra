@@ -24,15 +24,14 @@
     src: "{{ playbook_dir }}/files/metrics-profiles/metrics-aggregated.yaml"
     dest: "/tmp/metrics-aggregated.yaml"
 
-
 - name: Template metrics-endpoints.yaml for IKS clusters
   ansible.builtin.template:
     src: templates/metrics-endpoints.yaml.j2
     dest: "/tmp/metrics-endpoints-iks-{{ item }}.yaml"
   vars:
-    prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_IKS_' + item.config_var_prefix) }}"
+    prom_endpoint: "{{ 'PROM_ENDPOINT_IKS_' + item }}"
     prom_metrics_profile_path: "/tmp/metrics-aggregated.yaml"
-    prom_token: "{{ lookup('vars', 'PROM_TOKEN_IKS_' + item.config_var_prefix) }}"
+    prom_token: "{{ 'PROM_TOKEN_IKS_' + item }}"
   loop: 
     - karpenter
     - cas
@@ -42,7 +41,7 @@
     kube-burner init -c /tmp/kube-burner-config.yaml -e /tmp/metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}
   register: benchmark_result
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
+    KUBECONFIG: "{{ 'KUBECONFIG_IKS_' + item | upper }}"
   loop: 
     - karpenter
     - cas

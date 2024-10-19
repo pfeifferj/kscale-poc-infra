@@ -99,9 +99,17 @@
         prompt: "Press Enter to start benchmarking or Ctrl+C to abort..."
       when: auto_run_benchmark == 'false'
 
-    - name: Include benchmark tasks if enabled
-      include_tasks: tasks/benchmark.yaml
-      when: run_iks or run_eks
+    - name: IKS benchmark tasks
+      include_tasks: tasks/benchmark-iks.yaml
+      when: run_iks
+      tags:
+        - benchmark
+      vars:
+        ansible_become_password: "{{ SUDO_PASSWORD }}"
+
+    - name: EKS benchmark tasks
+      include_tasks: tasks/benchmark-eks.yaml
+      when: run_eks
       tags:
         - benchmark
       vars:

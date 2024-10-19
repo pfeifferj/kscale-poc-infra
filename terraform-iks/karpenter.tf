@@ -19,5 +19,5 @@ resource "ibm_container_vpc_cluster" "karpenter_cluster" {
 
 data "ibm_container_cluster_config" "karpenter" {
   cluster_name_id = ibm_container_vpc_cluster.karpenter_cluster.id
-  config_dir      = "${var.kube_config_path}/files/karpenter-iks-kubeconfig"
+  config_dir      = "${var.kube_config_path}/files/kubeconfig-iks-karpenter"
 }
