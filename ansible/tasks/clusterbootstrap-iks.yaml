@@ -26,7 +26,7 @@
           subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
   ignore_errors: yes 
 
-- name: Find kubeconfig for {{ item }}
+- name: Find kubeconfig paths
   find:
     paths: "{{ playbook_dir }}/files/kubeconfig-iks-{{ item }}"
     recurse: no
