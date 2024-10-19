@@ -1,0 +1,29 @@
+- name: Delete IKS cluster karpenter and cas
+  ibm.cloud.ibm_container_vpc_cluster:
+    ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
+    name: "{{ item }}"
+    vpc_id: "{{ VPC_ID }}"
+    force_delete_storage: true
+    state: absent
+  loop:
+    - karpenter
+    - cas
+
+- name: Delete all files in {{ item }} directory
+  become: yes
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/files/{{ item }}"
+    state: absent
+  loop:
+    - kubeconfig-iks-cas
+    - kubeconfig-iks-karpenter
+
+- name: Recreate {{ item }} directory
+  become: yes
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/files/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - kubeconfig-iks-cas
+    - kubeconfig-iks-karpenter

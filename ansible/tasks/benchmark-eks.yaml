@@ -1,0 +1,25 @@
+- name: Check if kube-burner is already installed
+  become: yes
+  ansible.builtin.stat:
+    path: /usr/local/bin/kube-burner
+  register: kube_burner_installed
+
+- name: Install kube-burner binary
+  become: yes
+  ansible.builtin.shell: |
+    curl -LO https://github.com/cloud-bulldozer/kube-burner/releases/latest/download/kube-burner-linux-amd64
+    chmod +x kube-burner-linux-amd64
+    mv kube-burner-linux-amd64 /usr/local/bin/kube-burner
+  args:
+    executable: /bin/bash
+  when: not kube_burner_installed.stat.exists
+
+- name: Prepare kube-burner configuration files
+  ansible.builtin.copy:
+    src: files/kube-burner-generic.yaml # change this to run different experiment
+    dest: /tmp/kube-burner-config.yaml
+
+- name: Copy metrics profile file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/files/metrics-profiles/metrics-aggregated.yaml"
+    dest: "/tmp/metrics-aggregated.yaml"

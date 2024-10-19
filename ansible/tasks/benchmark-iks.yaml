@@ -1,0 +1,58 @@
+- name: Check if kube-burner is already installed
+  become: yes
+  ansible.builtin.stat:
+    path: /usr/local/bin/kube-burner
+  register: kube_burner_installed
+
+- name: Install kube-burner binary
+  become: yes
+  ansible.builtin.shell: |
+    curl -LO https://github.com/cloud-bulldozer/kube-burner/releases/latest/download/kube-burner-linux-amd64
+    chmod +x kube-burner-linux-amd64
+    mv kube-burner-linux-amd64 /usr/local/bin/kube-burner
+  args:
+    executable: /bin/bash
+  when: not kube_burner_installed.stat.exists
+
+- name: Prepare kube-burner configuration files
+  ansible.builtin.copy:
+    src: files/kube-burner-generic.yaml # change this to run different experiment
+    dest: /tmp/kube-burner-config.yaml
+
+- name: Copy metrics profile file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/files/metrics-profiles/metrics-aggregated.yaml"
+    dest: "/tmp/metrics-aggregated.yaml"
+
+
+- name: Template metrics-endpoints.yaml for IKS clusters
+  ansible.builtin.template:
+    src: templates/metrics-endpoints.yaml.j2
+    dest: "/tmp/metrics-endpoints-iks-{{ item }}.yaml"
+  vars:
+    prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_IKS_' + item.config_var_prefix) }}"
+    prom_metrics_profile_path: "/tmp/metrics-aggregated.yaml"
+    prom_token: "{{ lookup('vars', 'PROM_TOKEN_IKS_' + item.config_var_prefix) }}"
+  loop: 
+    - karpenter
+    - cas
+
+- name: Run kube-burner on all clusters
+  ansible.builtin.shell: |
+    kube-burner init -c /tmp/kube-burner-config.yaml -e /tmp/metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}
+  register: benchmark_result
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
+  loop: 
+    - karpenter
+    - cas
+
+- name: Collect benchmark results
+  ansible.builtin.fetch:
+    src: "{{ ansible_env.HOME }}/kube-burner-results-iks-{{ item }}/"
+    dest: "./results/"
+    flat: yes
+  when: benchmark_result is success
+  loop: 
+    - karpenter
+    - cas
