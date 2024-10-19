@@ -28,7 +28,7 @@
 
 - name: Find kubeconfig for {{ item }}
   find:
-    paths: "{{ playbook_dir }}/files/{{ item }}-iks-kubeconfig"
+    paths: "{{ playbook_dir }}/files/kubeconfig-iks-{{ item }}"
     recurse: no
     file_type: directory
   loop:
@@ -38,7 +38,7 @@
 
 - name: Set kubeconfig for further tasks
   set_fact:
-    "KUBECONFIG_{{ item.item | upper }}_IKS": "{{ item.files[0].path }}/config.yml"
+    "KUBECONFIG_IKS_{{ item.item | upper }}": "{{ item.files[0].path }}/config.yml"
   loop: "{{ kubeconfig_dirs.results }}"
   when: item.matched > 0
   
@@ -53,4 +53,4 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"

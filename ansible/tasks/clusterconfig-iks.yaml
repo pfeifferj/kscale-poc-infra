@@ -3,37 +3,20 @@
     name: prometheus-community
     repo_url: "https://prometheus-community.github.io/helm-charts"
 
-- name: Create monitoring namespace
-  kubernetes.core.k8s:
-    api_version: v1
-    kind: Namespace
-    name: monitoring
-  loop:
-    - karpenter
-    - cas
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
-
 - name: Install Prometheus Operator (Kube Prometheus Stack)
   kubernetes.core.helm:
     name: prometheus-operator
     chart_ref: prometheus-community/kube-prometheus-stack
     release_namespace: monitoring
-    create_namespace: false
-    set_values:
-      - value: "prometheusOperator.enabled=true"
-        value_type: string
-      - value: "prometheus.enabled=true"
-        value_type: string
-      - value: "alertmanager.enabled=false"
-        value_type: string
-      - value: "grafana.enabled=false"
-        value_type: string
+    create_namespace: true
+    values: 
+      grafana:
+        enabled: false
   loop:
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS' + item | upper) }}"
 
 - name: Add cluster autoscaler chart repo
   kubernetes.core.helm_repository:
@@ -49,7 +32,7 @@
       - value: "'autoDiscovery.clusterName'={{ clusters_iks['iks_cas'] }}"
         value_type: string
     environment:
-      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_CAS_IKS') }}"
+      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
 
 - name: Deploy Karpenter Autoscaler (IKS)
   kubernetes.core.helm:
@@ -57,7 +40,7 @@
     chart_ref: pfeifferj/ibm-cloud-karpenter
     release_namespace: karpenter
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_KARPENTER_IKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -66,7 +49,7 @@
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
   loop:
     - karpenter
     - cas
@@ -80,14 +63,14 @@
       - "kubernetes.io/service-account.name=prometheus-sa"
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
   loop:
     - karpenter
     - cas
 
 - name: Set Prometheus token fact
   set_fact:
-    "IKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
+    "PROM_TOKEN_IKS_{{ item | upper }}": "{{ item.data.token | b64decode }}"
   with_items: "{{ prometheus_sa_token.resources }}"
 
 - name: Get Prometheus endpoint
@@ -98,12 +81,12 @@
     name: prometheus-server
   register: prometheus_svc
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_IKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
   loop:
     - karpenter
     - cas
 
 - name: Set Prometheus endpoint fact
   set_fact:
-    "IKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
+    "PROM_ENDPOINT_IKS_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
   loop: "{{ prometheus_svc.resources }}"

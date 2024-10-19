@@ -52,6 +52,14 @@
         - benchmark 
         - teardown
 
+    - name: Cleanup artefacts from previous runs
+      import_tasks: tasks/cleanup.yaml
+      when: run_iks
+      tags:
+        - setup
+      vars:
+        ansible_become_password: "{{ SUDO_PASSWORD }}"
+
     - name: Launch IBM Cloud bootstrap task if enabled
       import_tasks: tasks/clusterbootstrap-iks.yaml
       when: run_iks
@@ -72,6 +80,8 @@
       when: run_iks
       tags:
         - config
+      environment:
+        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
 
     - name: Configure EKS Clusters
       import_tasks: tasks/clusterconfig-eks.yaml
@@ -89,11 +99,13 @@
         prompt: "Press Enter to start benchmarking or Ctrl+C to abort..."
       when: auto_run_benchmark == 'false'
 
-    - name: Include IBM Cloud benchmark tasks if enabled
+    - name: Include benchmark tasks if enabled
       include_tasks: tasks/benchmark.yaml
       when: run_iks or run_eks
       tags:
         - benchmark
+      vars:
+        ansible_become_password: "{{ SUDO_PASSWORD }}"
 
     - name: Get IBM Cloud billing metrics
       import_tasks: tasks/fetch-billing-ibm.yaml

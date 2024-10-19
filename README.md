@@ -6,6 +6,40 @@ Deploys two IKS clusters, applies different autoscaling configs, runs benchmarks
 
 To compare benchmarks, EKS clusters can be deployed and tested against too.
 
+## Naming convention
+
+To ensure consistency for files, directories, variables for different cloud providers and cluster types this convention should be followed:
+
+Kubernetes Service specific:
+
+```txt
+<file descriptor>-<IKS|EKS>(-<karpenter|cas>)
+```
+
+Cloud platform specific:
+
+```txt
+<file descriptor>-<IBM|AWS>
+```
+
+Task example:
+
+```txt
+clusterconfig-iks.yaml
+```
+
+Config directory example:
+
+```txt
+kubeconfig-iks-karpenter
+```
+
+Prometheus endpoitn varibale example:
+
+```txt
+PROM_TOKEN_IKS_CAS
+```
+
 ## Prerequisites
 
 ansible, python & podman need to be installed on the system
@@ -83,6 +117,7 @@ SUBNET_ID:
   US_SOUTH_3: "redacted"
 AWS_ACCESS_KEY_ID: "redacted"
 AWS_SECRET_ACCESS_KEY: "redacted"
+SUDO_PASSWORD: "redacted"
 ```
 
 Before executing the playbook with `ansible-navigator` export the password:
