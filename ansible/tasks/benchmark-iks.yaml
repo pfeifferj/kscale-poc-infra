@@ -37,6 +37,7 @@
     - cas
 
 - name: Run kube-burner on all clusters
+  become: yes
   ansible.builtin.shell: |
     kube-burner init -c /tmp/kube-burner-config.yaml -e /tmp/metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}
   register: benchmark_result

@@ -16,7 +16,9 @@ module "eks_al2" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  self_managed_node_groups = {
+  enable_cluster_creator_admin_permissions = true
+  cluster_endpoint_public_access           = true
+  eks_managed_node_groups = {
     example = {
       ami_type      = "AL2_x86_64"
       instance_type = "m5.large"

@@ -16,12 +16,15 @@
   ignore_errors: yes 
 
 - name: Generate kubeconfig for EKS clusters
-  command: aws eks update-kubeconfig --name {{ item }} --region {{ region }} --kubeconfig {{ playbook_dir }}/files/{{ item }}-eks-kubeconfig
+  command: aws eks update-kubeconfig --name {{ item }} --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yaml
   loop:
     - karpenter
     - cas
   register: eks_kubeconfig_output
   changed_when: eks_kubeconfig_output.rc == 0
+  environment: 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
 
 - name: Set kubeconfig for further tasks
   set_fact:

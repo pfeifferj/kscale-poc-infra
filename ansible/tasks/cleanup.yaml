@@ -18,16 +18,16 @@
     - cas
 
 - name: Delete all files in kubeconfig directories
-  become: yes
   ansible.builtin.file:
     path: "{{ playbook_dir }}/files/{{ item }}"
     state: absent
   loop:
     - kubeconfig-iks-cas
     - kubeconfig-iks-karpenter
+    - kubeconfig-eks-cas
+    - kubeconfig-eks-karpenter
 
 - name: Recreate kubeconfig directories
-  become: yes
   ansible.builtin.file:
     path: "{{ playbook_dir }}/files/{{ item }}"
     state: directory
@@ -35,3 +35,13 @@
   loop:
     - kubeconfig-iks-cas
     - kubeconfig-iks-karpenter
+    - kubeconfig-eks-cas
+    - kubeconfig-eks-karpenter
+
+- name: Create empty config.yaml files in eks kubeconfig directories
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/files/{{ item }}/config.yaml"
+    state: touch
+  loop:
+    - kubeconfig-eks-cas
+    - kubeconfig-eks-karpenter
