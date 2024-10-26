@@ -25,6 +25,7 @@
   environment: 
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
 
 - name: Set kubeconfig for further tasks
   set_fact:
@@ -45,6 +46,9 @@
     - cas
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -54,6 +58,9 @@
     name: prometheus-sa
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"   
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas
@@ -68,6 +75,9 @@
   register: prometheus_sa_token
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas
@@ -85,6 +95,9 @@
     create_namespace: true
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas
@@ -98,6 +111,9 @@
   register: prometheus_svc
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas

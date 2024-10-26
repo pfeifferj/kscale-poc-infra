@@ -61,3 +61,8 @@ ansible/ansible-navigator.log
 # kubeconfigs
 ansible/files/kubeconfig-iks-karpenter/*
 ansible/files/kubeconfig-iks-cas/*
+
+ansible/files/kubeconfig-eks-karpenter/*
+ansible/files/kubeconfig-eks-cas/*
+
+**/terraform_debug.log
