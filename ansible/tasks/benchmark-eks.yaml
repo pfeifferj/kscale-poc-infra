@@ -6,13 +6,11 @@
 
 - name: Install kube-burner binary
   become: yes
-  ansible.builtin.shell: |
-    curl -LO https://github.com/cloud-bulldozer/kube-burner/releases/latest/download/kube-burner-linux-amd64
-    chmod +x kube-burner-linux-amd64
-    mv kube-burner-linux-amd64 /usr/local/bin/kube-burner
-  args:
-    executable: /bin/bash
-  when: not kube_burner_installed.stat.exists
+  ansible.builtin.get_url:
+    url: https://github.com/cloud-bulldozer/kube-burner/releases/latest/download/kube-burner-linux-amd64
+    dest: /usr/local/bin/kube-burner
+    mode: '0755'
+    force: yes
 
 - name: Prepare kube-burner configuration files
   ansible.builtin.copy:
@@ -23,3 +21,39 @@
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/files/metrics-profiles/metrics-aggregated.yaml"
     dest: "/tmp/metrics-aggregated.yaml"
+
+- name: Template metrics-endpoints.yaml for EKS clusters
+  ansible.builtin.template:
+    src: templates/metrics-endpoints.yaml.j2
+    dest: "/tmp/metrics-endpoints-eks-{{ item }}.yaml"
+  vars:
+    prom_endpoint: "{{ 'PROM_ENDPOINT_EKS_' + item }}"
+    prom_metrics_profile_path: "/tmp/metrics-aggregated.yaml"
+    prom_token: "{{ 'PROM_TOKEN_EKS_' + item }}"
+  loop: 
+    - karpenter
+    - cas
+
+- name: Run kube-burner on all clusters
+  become: yes
+  ansible.builtin.shell: |
+    /usr/local/bin/kube-burner init -c /tmp/kube-burner-config.yaml -e /tmp/metrics-endpoints-eks-{{ item }}.yaml --uuid {{ tag_uuid }}
+  register: benchmark_result
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' + item | upper) }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+  loop: 
+    - karpenter
+    - cas
+
+- name: Collect benchmark results
+  ansible.builtin.fetch:
+    src: "{{ ansible_env.HOME }}/kube-burner-results-eks-{{ item }}/"
+    dest: "./results/"
+    flat: yes
+  when: benchmark_result is success
+  loop: 
+    - karpenter
+    - cas

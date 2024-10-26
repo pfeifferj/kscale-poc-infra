@@ -29,7 +29,7 @@
 
 - name: Set kubeconfig for further tasks
   set_fact:
-    "KUBECONFIG_{{ item | upper }}_EKS": "{{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml"
+    "KUBECONFIG_EKS_{{ item | upper }}": "{{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml"
   loop:
     - karpenter
     - cas
@@ -45,80 +45,7 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' + item | upper) }}"
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"
-
-- name: Create service account token for Prometheus
-  kubernetes.core.k8s:
-    api_version: v1
-    kind: ServiceAccount
-    namespace: monitoring
-    name: prometheus-sa
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"   
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  loop:
-    - karpenter
-    - cas
-
-- name: Retrieve the token for Prometheus SA
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    namespace: monitoring
-    label_selectors:
-      - "kubernetes.io/service-account.name=prometheus-sa"
-  register: prometheus_sa_token
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  loop:
-    - karpenter
-    - cas
-
-- name: Set Prometheus token fact
-  set_fact:
-    "EKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
-  with_items: "{{ prometheus_sa_token.resources }}"
-
-- name: Deploy Prometheus for monitoring
-  kubernetes.core.helm:
-    name: prometheus
-    chart_ref: stable/prometheus
-    release_namespace: monitoring
-    create_namespace: true
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  loop:
-    - karpenter
-    - cas
-
-- name: Get Prometheus endpoint
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Service
-    namespace: monitoring
-    name: prometheus-server
-  register: prometheus_svc
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  loop:
-    - karpenter
-    - cas
-
-- name: Set Prometheus endpoint fact
-  set_fact:
-    "EKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
-  loop: "{{ prometheus_svc.resources }}"
