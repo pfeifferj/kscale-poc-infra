@@ -19,7 +19,7 @@ module "eks_al2" {
   enable_cluster_creator_admin_permissions = true
   cluster_endpoint_public_access           = true
   eks_managed_node_groups = {
-    example = {
+    cas = {
       ami_type      = "AL2_x86_64"
       instance_type = "m5.large"
 

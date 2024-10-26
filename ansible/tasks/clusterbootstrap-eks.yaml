@@ -16,7 +16,7 @@
   ignore_errors: yes 
 
 - name: Generate kubeconfig for EKS clusters
-  command: aws eks update-kubeconfig --name {{ item }} --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yaml
+  command: aws eks update-kubeconfig --name {{ item }}-eks --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml
   loop:
     - karpenter
     - cas
@@ -28,7 +28,7 @@
 
 - name: Set kubeconfig for further tasks
   set_fact:
-    "KUBECONFIG_{{ item | upper }}_EKS": "{{ playbook_dir }}/files/{{ item }}-eks-kubeconfig"
+    "KUBECONFIG_{{ item | upper }}_EKS": "{{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml"
   loop:
     - karpenter
     - cas
@@ -44,7 +44,7 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -53,7 +53,7 @@
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"   
   loop:
     - karpenter
     - cas
@@ -67,7 +67,7 @@
       - "kubernetes.io/service-account.name=prometheus-sa"
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
   loop:
     - karpenter
     - cas
@@ -97,7 +97,7 @@
     name: prometheus-server
   register: prometheus_svc
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper) + '_EKS' }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
   loop:
     - karpenter
     - cas
