@@ -16,7 +16,7 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS' + item | upper) }}"
+    KUBECONFIG: "{{ 'KUBECONFIG_EKS' + item | upper }}"
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"
@@ -35,7 +35,7 @@
       - value: "'autoDiscovery.clusterName'={{ clusters_eks['eks_cas'] }}"
         value_type: string
     environment:
-      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}"
+      KUBECONFIG: "{{ KUBECONFIG_EKS_CAS }}"
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -44,7 +44,7 @@
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS' + item | upper) }}"   
+    KUBECONFIG: "{{ 'KUBECONFIG_EKS' + item | upper }}"   
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"
@@ -61,7 +61,7 @@
       - "kubernetes.io/service-account.name=prometheus-sa"
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper + '_EKS') }}"
+    KUBECONFIG: "{{ 'KUBECONFIG_' + item | upper + '_EKS' }}"
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"
@@ -82,7 +82,7 @@
     name: prometheus-server
   register: prometheus_svc
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' + item | upper  + '_EKS') }}"
+    KUBECONFIG: "{{ 'KUBECONFIG_' + item | upper  + '_EKS' }}"
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"

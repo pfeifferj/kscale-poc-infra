@@ -1,16 +1,18 @@
-- name: Check if kube-burner is already installed
-  become: yes
-  ansible.builtin.stat:
-    path: /usr/local/bin/kube-burner
-  register: kube_burner_installed
-
-- name: Install kube-burner binary
+- name: Download kube-burner archive
   become: yes
   ansible.builtin.get_url:
-    url: https://github.com/cloud-bulldozer/kube-burner/releases/latest/download/kube-burner-linux-amd64
-    dest: /usr/local/bin/kube-burner
-    mode: '0755'
+    url: "https://github.com/kube-burner/kube-burner/releases/download/{{ kube_burner_version }}/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
+    dest: "/tmp/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
+    mode: '0644'
     force: yes
+
+- name: Unarchive kube-burner binary
+  become: yes
+  ansible.builtin.unarchive:
+    src: "/tmp/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
+    dest: /usr/local/bin/
+    remote_src: yes
+    mode: '0755'
 
 - name: Prepare kube-burner configuration files
   ansible.builtin.copy:
@@ -27,9 +29,9 @@
     src: templates/metrics-endpoints.yaml.j2
     dest: "/tmp/metrics-endpoints-iks-{{ item }}.yaml"
   vars:
-    prom_endpoint: "{{ 'PROM_ENDPOINT_IKS_' + item }}"
+    prom_endpoint: "{{ 'PROM_ENDPOINT_IKS_' + item | upper }}"
     prom_metrics_profile_path: "/tmp/metrics-aggregated.yaml"
-    prom_token: "{{ 'PROM_TOKEN_IKS_' + item }}"
+    prom_token: "{{ 'PROM_TOKEN_IKS_' + item | upper }}"
   loop: 
     - karpenter
     - cas

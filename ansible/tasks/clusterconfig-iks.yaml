@@ -16,7 +16,7 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS' + item | upper) }}"
+    KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS' + item | upper }}"
 
 - name: Add cluster autoscaler chart repo
   kubernetes.core.helm_repository:
@@ -32,15 +32,15 @@
       - value: "'autoDiscovery.clusterName'={{ clusters_iks['iks_cas'] }}"
         value_type: string
     environment:
-      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+      KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS_CAS' }}"
 
-- name: Deploy Karpenter Autoscaler (IKS)
-  kubernetes.core.helm:
-    name: karpenter
-    chart_ref: pfeifferj/ibm-cloud-karpenter
-    release_namespace: karpenter
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
+# - name: Deploy Karpenter Autoscaler (IKS)
+#   kubernetes.core.helm:
+#     name: karpenter
+#     chart_ref: pfeifferj/ibm-cloud-karpenter
+#     release_namespace: karpenter
+#   environment:
+#     KUBECONFIG: "{{ lookup'vars', 'KUBECONFIG_IKS_KARPENTER' }}"
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -49,7 +49,7 @@
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
+    KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS_' + item | upper }}"
   loop:
     - karpenter
     - cas
@@ -63,7 +63,7 @@
       - "kubernetes.io/service-account.name=prometheus-sa"
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
+    KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS_' + item | upper }}"
   loop:
     - karpenter
     - cas
@@ -81,7 +81,7 @@
     name: prometheus-server
   register: prometheus_svc
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
+    KUBECONFIG: "{{ 'KUBECONFIG_IKS_' + item | upper }}"
   loop:
     - karpenter
     - cas
