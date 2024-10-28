@@ -1,4 +1,3 @@
-# destroy clusters to clean up
 - name: Destroy IKS clusters with Terraform
   community.general.terraform:
     project_path: "{{ playbook_dir }}/../terraform-iks"
@@ -22,12 +21,3 @@
           subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
         - name: us-south-3
           subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
-
-          # use tags to dynamically do this for what was deployed across clouds
-
-- name: Destroy EKS clusters with Terraform
-  community.general.terraform:
-    project_path: "{{ playbook_dir }}/../terraform-eks"
-    state: absent
-    purge_workspace: true
-    complex_vars: true

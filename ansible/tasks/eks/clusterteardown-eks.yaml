@@ -1,0 +1,9 @@
+- name: Destroy EKS clusters with Terraform
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-eks"
+    state: absent
+    purge_workspace: true
+    complex_vars: true
+    variables:
+      aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+      aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"

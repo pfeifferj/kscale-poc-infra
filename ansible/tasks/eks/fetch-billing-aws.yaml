@@ -5,7 +5,7 @@
     tag_key: "tag"
     tag_value: "{{ item }}-{{ tag_uuid }}"
   ansible.builtin.command:
-    cmd: python3 files/fetch_billing_data_aws.py --tag_key '{{ tag_key }}' --tag_value '{{ tag_value }}' --access_key '{{ AWS_ACCESS_KEY_ID }}' --secret_key '{{ AWS_SECRET_ACCESS_KEY }}' --output_file '{{ output_file }}'
+    cmd: python3 files/scripts/fetch_billing_data_aws.py --tag_key '{{ tag_key }}' --tag_value '{{ tag_value }}' --access_key '{{ AWS_ACCESS_KEY_ID }}' --secret_key '{{ AWS_SECRET_ACCESS_KEY }}' --output_file '{{ output_file }}'
   register: billing_data
   loop:
     - karpenter

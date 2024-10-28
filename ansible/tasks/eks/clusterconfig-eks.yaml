@@ -16,31 +16,26 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS' + item | upper }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
 
 - name: Add cluster autoscaler chart repo
   kubernetes.core.helm_repository:
     name: autoscaler
-    repo_url: "https://icr.io/helm/iks-charts"
+    repo_url: "https://kubernetes.github.io/autoscaler"
 
-- name: Deploy Cluster Autoscaler (IKS)
+- name: Deploy Cluster Autoscaler (EKS)
   kubernetes.core.helm:
     name: cas
     chart_ref: autoscaler/cluster-autoscaler
     release_namespace: cas
     set_values:
-      - value: "'autoDiscovery.clusterName'={{ clusters_iks['iks_cas'] }}"
+      - value: "'autoDiscovery.clusterName'={{ clusters_eks['eks_cas'] }}"
         value_type: string
     environment:
-      KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS_CAS' }}"
-
-# - name: Deploy Karpenter Autoscaler (IKS)
-#   kubernetes.core.helm:
-#     name: karpenter
-#     chart_ref: pfeifferj/ibm-cloud-karpenter
-#     release_namespace: karpenter
-#   environment:
-#     KUBECONFIG: "{{ lookup'vars', 'KUBECONFIG_IKS_KARPENTER' }}"
+      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
 
 - name: Create service account token for Prometheus
   kubernetes.core.k8s:
@@ -49,7 +44,10 @@
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS_' + item | upper }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas
@@ -63,14 +61,17 @@
       - "kubernetes.io/service-account.name=prometheus-sa"
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ 'vars', 'KUBECONFIG_IKS_' + item | upper }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas
 
 - name: Set Prometheus token fact
   set_fact:
-    "PROM_TOKEN_IKS_{{ item | upper }}": "{{ item.data.token | b64decode }}"
+    "EKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
   with_items: "{{ prometheus_sa_token.resources }}"
 
 - name: Get Prometheus endpoint
@@ -81,12 +82,15 @@
     name: prometheus-server
   register: prometheus_svc
   environment:
-    KUBECONFIG: "{{ 'KUBECONFIG_IKS_' + item | upper }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
   loop:
     - karpenter
     - cas
 
 - name: Set Prometheus endpoint fact
   set_fact:
-    "PROM_ENDPOINT_IKS_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
+    "EKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
   loop: "{{ prometheus_svc.resources }}"

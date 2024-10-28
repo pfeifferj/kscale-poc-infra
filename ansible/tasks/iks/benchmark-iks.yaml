@@ -1,7 +1,7 @@
 - name: Download kube-burner archive
   become: yes
   ansible.builtin.get_url:
-    url: "https://github.com/kube-burner/kube-burner/releases/download/{{ kube_burner_version }}/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
+    url: "https://github.com/kube-burner/kube-burner/releases/download/v1.10.9/kube-burner-V1.10.9-linux-x86_64.tar.gz"
     dest: "/tmp/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
     mode: '0644'
     force: yes
@@ -29,9 +29,9 @@
     src: templates/metrics-endpoints.yaml.j2
     dest: "/tmp/metrics-endpoints-iks-{{ item }}.yaml"
   vars:
-    prom_endpoint: "{{ 'PROM_ENDPOINT_IKS_' + item | upper }}"
+    prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_IKS_' ~ (item | upper)) }}"
     prom_metrics_profile_path: "/tmp/metrics-aggregated.yaml"
-    prom_token: "{{ 'PROM_TOKEN_IKS_' + item | upper }}"
+    prom_token: "{{ lookup('vars', 'PROM_TOKEN_IKS_' ~ (item | upper)) }}"
   loop: 
     - karpenter
     - cas
@@ -42,7 +42,7 @@
     /usr/local/bin/kube-burner init -c /tmp/kube-burner-config.yaml -e /tmp/metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}
   register: benchmark_result
   environment:
-    KUBECONFIG: "{{ 'KUBECONFIG_IKS_' + item | upper }}"
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
   loop: 
     - karpenter
     - cas

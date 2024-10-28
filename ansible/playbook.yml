@@ -61,56 +61,45 @@
         ansible_become_password: "{{ SUDO_PASSWORD }}"
 
     - name: Launch IBM Cloud bootstrap task if enabled
-      import_tasks: tasks/clusterbootstrap-iks.yaml
+      import_tasks: tasks/iks/clusterbootstrap-iks.yaml
       when: run_iks
       tags:
         - setup
       register: iks_bootstrap
 
     - name: Launch AWS bootstrap task if enabled
-      import_tasks: tasks/clusterbootstrap-eks.yaml
+      import_tasks: tasks/eks/clusterbootstrap-eks.yaml
       when: run_eks
       tags:
         - setup
       register: eks_bootstrap
 
     - name: Configure IKS Clusters
-      import_tasks: tasks/clusterconfig-iks.yaml
+      import_tasks: tasks/iks/clusterconfig-iks.yaml
       ignore_errors: true
       when: run_iks
       tags:
         - config
-      environment:
-        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' + item | upper) }}"
 
     - name: Configure EKS Clusters
-      import_tasks: tasks/clusterconfig-eks.yaml
+      import_tasks: tasks/eks/clusterconfig-eks.yaml
       ignore_errors: true
       when: run_eks
       tags:
         - config
 
-    - name: Check if AUTO_RUN_BENCHMARK environment variable is set
-      set_fact:
-        auto_run_benchmark: "{{ lookup('env', 'AUTO_RUN_BENCHMARK') | default('false') }}"
-
-    - name: Prompt for manual start before benchmarking
-      pause:
-        prompt: "Press Enter to start benchmarking or Ctrl+C to abort..."
-      when: auto_run_benchmark == 'false'
-
     - name: IKS benchmark tasks
-      include_tasks: tasks/benchmark-iks.yaml
+      include_tasks: tasks/iks/benchmark-iks.yaml
       when: run_iks
       tags:
         - benchmark
       vars:
         ansible_become_password: "{{ SUDO_PASSWORD }}"
         kube_burner_version: 'V1.10.9'   
-        kube_burner_arch: 'linux-x86_64'    
+        kube_burner_arch: 'linux-x86_64'
 
     - name: EKS benchmark tasks
-      include_tasks: tasks/benchmark-eks.yaml
+      include_tasks: tasks/eks/benchmark-eks.yaml
       when: run_eks
       tags:
         - benchmark
@@ -118,34 +107,25 @@
         ansible_become_password: "{{ SUDO_PASSWORD }}"
 
     - name: Get IBM Cloud billing metrics
-      import_tasks: tasks/fetch-billing-ibm.yaml
+      import_tasks: tasks/iks/fetch-billing-ibm.yaml
       when: run_iks
       tags:
         - billing
 
     - name: Get AWS Cloud billing metrics
-      import_tasks: tasks/fetch-billing-aws.yaml
+      import_tasks: tasks/eks/fetch-billing-aws.yaml
       when: run_eks
       tags:
         - billing
 
-    - name: Check if AUTO_RUN_TEARDOWN environment variable is set
-      set_fact:
-        auto_run_teardown: "{{ lookup('env', 'AUTO_RUN_TEARDOWN') | default('false') }}"
-
-    - name: Prompt for manual confirmation before teardown
-      pause:
-        prompt: "Press Enter to start teardown or Ctrl+C to abort..."
-      when: auto_run_teardown == 'false'
-
     - name: Run IBM Cloud teardown if enabled
-      include_tasks: tasks/clusterteardown.yaml
+      include_tasks: tasks/iks/clusterteardown-iks.yaml
       when: run_iks
       tags:
         - teardown
 
     - name: Run AWS teardown if enabled
-      include_tasks: tasks/clusterteardown.yaml
+      include_tasks: tasks/eks/clusterteardown-eks.yaml
       when: run_eks
       tags:
         - teardown

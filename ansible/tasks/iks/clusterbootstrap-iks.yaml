@@ -53,5 +53,4 @@
     - karpenter
     - cas
   environment:
-    KUBECONFIG: "{{ 'KUBECONFIG_IKS_' + item | upper }}"
-    
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
