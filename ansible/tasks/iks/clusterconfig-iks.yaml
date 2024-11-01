@@ -29,7 +29,7 @@
     chart_ref: autoscaler/cluster-autoscaler
     release_namespace: cas
     set_values:
-      - value: "'autoDiscovery.clusterName'={{ clusters_iks['iks_cas'] }}"
+      - value: "'autoDiscovery.clusterName'=cas-iks"
         value_type: string
     environment:
       KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
@@ -40,9 +40,9 @@
 #     chart_ref: pfeifferj/ibm-cloud-karpenter
 #     release_namespace: karpenter
 #   environment:
-#     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
+#     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER' }}"
 
-- name: Create service account token for Prometheus
+- name: Create service account for Prometheus
   kubernetes.core.k8s:
     api_version: v1
     kind: ServiceAccount
@@ -54,6 +54,23 @@
     - karpenter
     - cas
 
+- name: Create service account token secret for Prometheus
+  kubernetes.core.k8s:
+    resource_definition:
+      api_version: v1
+      kind: Secret
+      metadata:
+        name: prometheus-sa-token
+        namespace: monitoring
+        annotations:
+          kubernetes.io/service-account.name: prometheus-sa
+      type: kubernetes.io/service-account-token
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
+  loop:
+    - karpenter
+    - cas
+    
 - name: Retrieve the token for Prometheus SA
   kubernetes.core.k8s_info:
     api_version: v1

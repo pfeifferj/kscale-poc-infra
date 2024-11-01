@@ -37,14 +37,14 @@
     environment:
       KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
 
-- name: Create service account token for Prometheus
+- name: Create service account for Prometheus
   kubernetes.core.k8s:
     api_version: v1
     kind: ServiceAccount
     namespace: monitoring
     name: prometheus-sa
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}"
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"
@@ -52,6 +52,26 @@
     - karpenter
     - cas
 
+- name: Create service account token secret for Prometheus
+  kubernetes.core.k8s:
+    resource_definition:
+      api_version: v1
+      kind: Secret
+      metadata:
+        name: prometheus-sa-token
+        namespace: monitoring
+        annotations:
+          kubernetes.io/service-account.name: prometheus-sa
+      type: kubernetes.io/service-account-token
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+  loop:
+    - karpenter
+    - cas
+    
 - name: Retrieve the token for Prometheus SA
   kubernetes.core.k8s_info:
     api_version: v1
@@ -71,9 +91,9 @@
 
 - name: Set Prometheus token fact
   set_fact:
-    "EKS_PROM_TOKEN_{{ item | upper }}": "{{ item.data.token | b64decode }}"
+    "PROM_TOKEN_EKS_{{ item | upper }}": "{{ item.data.token | b64decode }}"
   with_items: "{{ prometheus_sa_token.resources }}"
-
+      
 - name: Get Prometheus endpoint
   kubernetes.core.k8s_info:
     api_version: v1
