@@ -77,8 +77,7 @@
     api_version: v1
     kind: Secret
     namespace: monitoring
-    label_selectors:
-      - "kubernetes.io/service-account.name=prometheus-sa"
+    name: prometheus-sa-token
   register: prometheus_sa_token
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
@@ -99,7 +98,7 @@
     api_version: v1
     kind: Service
     namespace: monitoring
-    name: prometheus-server
+    name: prometheus-operator-kube-p-prometheus
   register: prometheus_svc
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
