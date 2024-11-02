@@ -1,6 +1,4 @@
 global:
-  duration: 1h
-  cleanup: true
   measurements:
     - name: nodeLatency
     - name: podLatency
@@ -9,7 +7,6 @@ global:
   requestTimeout: 60s
   gc: true
   gcMetrics: false
-  gcTimeout: 1h
   waitWhenFinished: true
   clusterHealth: true
 
@@ -24,13 +21,13 @@ jobs:
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: templates/generic/deployment.yaml
+      - objectTemplate: files/templates/generic/deployment.yaml
         replicas: 1 
-      - objectTemplate: templates/generic/configmap.yaml
+      - objectTemplate: files/templates/generic/configmap.yaml
         replicas: 1
-      - objectTemplate: templates/generic/secret.yaml
+      - objectTemplate: files/templates/generic/secret.yaml
         replicas: 1
-      - objectTemplate: templates/generic/service.yaml
+      - objectTemplate: files/templates/generic/service.yaml
         replicas: 1
 
   - name: api-intensive-patch
@@ -40,17 +37,17 @@ jobs:
     burst: 2
     objects:
       - kind: Deployment
-        objectTemplate: templates/generic/deployment_patch_add_label.json
+        objectTemplate: files/templates/generic/deployment_patch_add_label.json
         labelSelector: {kube-burner-job: api-intensive}
         patchType: "application/json-patch+json"
         apiVersion: apps/v1
       - kind: Deployment
-        objectTemplate: templates/generic/deployment_patch_add_pod_2.yaml
+        objectTemplate: files/templates/generic/deployment_patch_add_pod_2.yaml
         labelSelector: {kube-burner-job: api-intensive}
         patchType: "application/apply-patch+yaml"
         apiVersion: apps/v1
       - kind: Deployment
-        objectTemplate: templates/generic/deployment_patch_add_label.yaml
+        objectTemplate: files/templates/generic/deployment_patch_add_label.yaml
         labelSelector: {kube-burner-job: api-intensive}
         patchType: "application/strategic-merge-patch+json"
         apiVersion: apps/v1

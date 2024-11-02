@@ -44,7 +44,6 @@
 
 - name: Create service account for Prometheus
   kubernetes.core.k8s:
-    api_version: v1
     kind: ServiceAccount
     namespace: monitoring
     name: prometheus-sa
@@ -57,7 +56,6 @@
 - name: Create service account token secret for Prometheus
   kubernetes.core.k8s:
     resource_definition:
-      api_version: v1
       kind: Secret
       metadata:
         name: prometheus-sa-token
@@ -86,23 +84,12 @@
 
 - name: Set Prometheus token fact
   set_fact:
-    "PROM_TOKEN_IKS_{{ item | upper }}": "{{ item.data.token | b64decode }}"
-  with_items: "{{ prometheus_sa_token.resources }}"
+    "PROM_TOKEN_IKS_{{ item.item | upper }}": "{{ item.resources[0].data.token | b64decode }}"
+  loop: "{{ prometheus_sa_token.results }}"
 
-- name: Get Prometheus endpoint
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Service
-    namespace: monitoring
-    name: prometheus-operator-kube-p-prometheus
-  register: prometheus_svc
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}" 
-  loop:
-    - karpenter
-    - cas
-
-- name: Set Prometheus endpoint fact
+- name: Set Prometheus endpoint facts for port-forwarded services
   set_fact:
-    "PROM_ENDPOINT_IKS_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
-  loop: "{{ prometheus_svc.resources }}"
+    "PROM_ENDPOINT_IKS_{{ item.cluster | upper }}": "http://localhost:{{ item.port }}"
+  loop:
+    - { cluster: 'karpenter', port: 9091 }
+    - { cluster: 'cas', port: 9092 }

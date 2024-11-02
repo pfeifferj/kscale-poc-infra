@@ -65,4 +65,10 @@ ansible/files/kubeconfig-iks-cas/*
 ansible/files/kubeconfig-eks-karpenter/*
 ansible/files/kubeconfig-eks-cas/*
 
+# logs
 **/terraform_debug.log
+
+# kube burner
+ansible/kube-burner-*.log
+ansible/metrics-*.yaml
+ansible/kube-burner-config.yaml

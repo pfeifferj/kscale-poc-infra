@@ -1,6 +1,4 @@
 global:
-  duration: 1h
-  cleanup: true
   measurements:
     - name: nodeLatency
     - name: podLatency
@@ -9,7 +7,6 @@ global:
   requestTimeout: 60s
   gc: true
   gcMetrics: false
-  gcTimeout: 1h
   waitWhenFinished: true
   clusterHealth: true
 
@@ -24,11 +21,11 @@ jobs:
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: templates/heterogenous/deployment-cpu-s
+      - objectTemplate: files/templates/heterogenous/deployment-cpu-s
         replicas: 4  
-      - objectTemplate: templates/heterogenous/deployment-cpu-m
+      - objectTemplate: files/templates/heterogenous/deployment-cpu-m
         replicas: 4
-      - objectTemplate: templates/heterogenous/deployment-cpu-l
+      - objectTemplate: files/templates/heterogenous/deployment-cpu-l
         replicas: 4
   - name: memory-intensive
     jobIterations: 10
@@ -40,11 +37,11 @@ jobs:
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: templates/heterogenous/deployment-memory-s
+      - objectTemplate: files/templates/heterogenous/deployment-memory-s
         replicas: 4  
-      - objectTemplate: templates/heterogenous/deployment-memory-m
+      - objectTemplate: files/templates/heterogenous/deployment-memory-m
         replicas: 4
-      - objectTemplate: templates/heterogenous/deployment-memory-l
+      - objectTemplate: files/templates/heterogenous/deployment-memory-l
         replicas: 4
   - name: network-intensive
     jobIterations: 10
@@ -56,11 +53,11 @@ jobs:
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: templates/heterogenous/deployment-network-s
+      - objectTemplate: files/templates/heterogenous/deployment-network-s
         replicas: 4  
-      - objectTemplate: templates/heterogenous/deployment-network-m
+      - objectTemplate: files/templates/heterogenous/deployment-network-m
         replicas: 4
-      - objectTemplate: templates/heterogenous/deployment-network-l
+      - objectTemplate: files/templates/heterogenous/deployment-network-l
         replicas: 4
   - name: io-intensive
     jobIterations: 10
@@ -72,10 +69,10 @@ jobs:
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: templates/heterogenous/deployment-io-s
+      - objectTemplate: files/templates/heterogenous/deployment-io-s
         replicas: 4  
-      - objectTemplate: templates/heterogenous/deployment-io-m
+      - objectTemplate: files/templates/heterogenous/deployment-io-m
         replicas: 4
-      - objectTemplate: templates/heterogenous/deployment-io-l
+      - objectTemplate: files/templates/heterogenous/deployment-io-l
         replicas: 4
         

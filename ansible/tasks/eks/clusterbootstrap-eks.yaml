@@ -10,7 +10,7 @@
       aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
       aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
       flavour: "m5.large"
-      kube_version: "1.30" # EKS only uspports major.minor
+      kube_version: "1.29" # EKS only uspports major.minor
       worker_count: 1
       worker_pool_count: 3
   ignore_errors: yes 

@@ -17,42 +17,41 @@
 - name: Prepare kube-burner configuration files
   ansible.builtin.copy:
     src: files/kube-burner-generic.yaml # change this to run different experiment
-    dest: /tmp/kube-burner-config.yaml
+    dest: kube-burner-config.yaml
 
 - name: Copy metrics profile file
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/files/metrics-profiles/metrics-aggregated.yaml"
-    dest: "/tmp/metrics-aggregated.yaml"
+    dest: "metrics-aggregated.yaml"
 
 - name: Template metrics-endpoints.yaml for IKS clusters
   ansible.builtin.template:
     src: templates/metrics-endpoints.yaml.j2
-    dest: "/tmp/metrics-endpoints-iks-{{ item }}.yaml"
+    dest: "metrics-endpoints-iks-{{ item }}.yaml"
   vars:
     prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_IKS_' ~ (item | upper)) }}"
-    prom_metrics_profile_path: "/tmp/metrics-aggregated.yaml"
+    prom_metrics_profile_path: "metrics-aggregated.yaml"
     prom_token: "{{ lookup('vars', 'PROM_TOKEN_IKS_' ~ (item | upper)) }}"
   loop: 
     - karpenter
     - cas
 
+- name: start port-forwarding for prometheus
+  ansible.builtin.shell: |
+    files/script/start_port_forward.sh "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}" {{ item.port }} &
+  async: 4500
+  poll: 0
+  loop:
+    - { cluster: 'karpenter', port: 9091 }
+    - { cluster: 'cas', port: 9092 }
+
 - name: Run kube-burner on all clusters
   become: yes
   ansible.builtin.shell: |
-    /usr/local/bin/kube-burner init -c /tmp/kube-burner-config.yaml -e /tmp/metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}
+    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }} --timeout 1h
   register: benchmark_result
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
-  loop: 
-    - karpenter
-    - cas
-
-- name: Collect benchmark results
-  ansible.builtin.fetch:
-    src: "{{ ansible_env.HOME }}/kube-burner-results-iks-{{ item }}/"
-    dest: "./results/"
-    flat: yes
-  when: benchmark_result is success
   loop: 
     - karpenter
     - cas

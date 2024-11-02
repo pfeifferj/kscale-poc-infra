@@ -90,26 +90,13 @@
 
 - name: Set Prometheus token fact
   set_fact:
-    "PROM_TOKEN_EKS_{{ item | upper }}": "{{ item.data.token | b64decode }}"
-  with_items: "{{ prometheus_sa_token.resources }}"
-      
-- name: Get Prometheus endpoint
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Service
-    namespace: monitoring
-    name: prometheus-operator-kube-p-prometheus
-  register: prometheus_svc
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  loop:
-    - karpenter
-    - cas
+    "PROM_TOKEN_IKS_{{ item.item | upper }}": "{{ item.resources[0].data.token | b64decode }}"
+  loop: "{{ prometheus_sa_token.results }}"
 
-- name: Set Prometheus endpoint fact
+- name: Set Prometheus endpoint facts for port-forwarded services
   set_fact:
-    "EKS_PROM_ENDPOINT_{{ item | upper }}": "http://{{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
-  loop: "{{ prometheus_svc.resources }}"
+    "PROM_ENDPOINT_EKS_{{ item.cluster | upper }}": "http://localhost:{{ item.port }}"
+  loop:
+    - { cluster: 'karpenter', port: 9093 }
+    - { cluster: 'cas', port: 9094 }
+    
