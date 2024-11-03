@@ -36,18 +36,25 @@
     - karpenter
     - cas
 
-- name: start port-forwarding for prometheus
-  ansible.builtin.shell: |
-    files/script/start_port_forward.sh "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}" {{ item.port }} &
-  environment:
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  async: 4500
-  poll: 0
+- name: deploy systemd service for port-forwarding
+  ansible.builtin.template:
+    src: templates/port-forward@.service.j2
+    dest: /etc/systemd/system/port-forward-{{ item.cluster }}-eks.service
+    mode: '0644'
   loop:
     - { cluster: 'karpenter', port: 9093 }
     - { cluster: 'cas', port: 9094 }
+  vars:
+    kubeconfig_path: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}" 
+
+- name: start port-forward service for each cluster
+  ansible.builtin.systemd:
+    name: "port-forward-{{ item }}-eks"
+    state: started
+    enabled: yes
+  loop:
+    - karpenter
+    - cas
 
 - name: Run kube-burner on all clusters
   become: yes
@@ -60,5 +67,14 @@
     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
     AWS_DEFAULT_REGION: "us-east-1"
   loop: 
+    - karpenter
+    - cas
+
+- name: stop and disable port-forward service for each cluster
+  ansible.builtin.systemd:
+    name: "port-forward-{{ item }}-eks"
+    state: stopped
+    enabled: no
+  loop:
     - karpenter
     - cas
