@@ -6,7 +6,7 @@ After=network.target
 Environment="AWS_ACCESS_KEY_ID={{ AWS_ACCESS_KEY_ID }}"
 Environment="AWS_SECRET_ACCESS_KEY={{ AWS_SECRET_ACCESS_KEY }}"
 Environment="AWS_DEFAULT_REGION=us-east-1"
-ExecStart={{ playbook_dir }}/files/script/start_port_forward.sh {{ kubeconfig_path }} {{ item.port }}
+ExecStart={{ playbook_dir }}/files/scripts/portforward.sh {{ kubeconfig_path }} {{ item.port }}
 Restart=always
 User={{ ansible_user }}
 

@@ -15,6 +15,11 @@ resource "ibm_container_vpc_cluster" "karpenter_cluster" {
   }
 
   tags = ["karpenter-${var.tag_uuid}"]
+
+  timeouts {
+    create = "150m"
+    delete = "30m"
+  }
 }
 
 data "ibm_container_cluster_config" "karpenter" {

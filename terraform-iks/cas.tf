@@ -15,6 +15,10 @@ resource "ibm_container_vpc_cluster" "cas_cluster" {
   }
   tags = ["cas-${var.tag_uuid}"]
 
+  timeouts {
+    create = "150m"
+    delete = "30m"
+  }
 }
 
 resource "ibm_container_vpc_worker_pool" "cas_pool" {
@@ -30,6 +34,11 @@ resource "ibm_container_vpc_worker_pool" "cas_pool" {
       subnet_id = zones.value["subnet_id"]
       name      = zones.value["name"]
     }
+  }
+
+  timeouts {
+    create = "150m"
+    delete = "30m"
   }
 }
 
