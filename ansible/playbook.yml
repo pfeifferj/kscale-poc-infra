@@ -105,6 +105,8 @@
         - benchmark
       vars:
         ansible_become_password: "{{ SUDO_PASSWORD }}"
+        kube_burner_version: 'V1.10.9'   
+        kube_burner_arch: 'linux-x86_64'
 
     - name: Get IBM Cloud billing metrics
       import_tasks: tasks/iks/fetch-billing-ibm.yaml

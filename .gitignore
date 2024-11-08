@@ -72,3 +72,4 @@ ansible/files/kubeconfig-eks-cas/*
 ansible/kube-burner-*.log
 ansible/metrics-*.yaml
 ansible/kube-burner-config.yaml
+ansible/kube-burner-metrics.tgz

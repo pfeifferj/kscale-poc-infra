@@ -32,10 +32,11 @@
     prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_IKS_' ~ (item | upper)) }}"
     prom_metrics_profile_path: "metrics-aggregated.yaml"
     prom_token: "{{ lookup('vars', 'PROM_TOKEN_IKS_' ~ (item | upper)) }}"
+    env: "iks"
   loop: 
     - karpenter
     - cas
-
+    
 - name: deploy systemd service for port-forwarding
   become: yes
   ansible.builtin.template:
@@ -59,6 +60,10 @@
     - karpenter
     - cas
 
+- name: wait 5 minutes
+  ansible.builtin.wait_for:
+    timeout: 600
+
 - name: Run kube-burner on all clusters
   become: yes
   ansible.builtin.shell: |
@@ -71,6 +76,7 @@
     - cas
 
 - name: stop and disable port-forward service for each cluster
+  become: yes
   ansible.builtin.systemd:
     name: "port-forward-{{ item }}-iks"
     state: stopped

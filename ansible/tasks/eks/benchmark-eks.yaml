@@ -32,6 +32,7 @@
     prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_EKS_' ~ (item | upper)) }}"
     prom_metrics_profile_path: "metrics-aggregated.yaml"
     prom_token: "{{ lookup('vars', 'PROM_TOKEN_EKS_' ~ (item | upper)) }}"
+    env: "eks"
   loop: 
     - karpenter
     - cas
@@ -54,9 +55,14 @@
     name: "port-forward-{{ item }}-eks"
     state: started
     enabled: yes
+    daemon_reload: true
   loop:
     - karpenter
     - cas
+
+- name: wait 5 minutes
+  ansible.builtin.wait_for:
+    timeout: 600
 
 - name: Run kube-burner on all clusters
   become: yes
