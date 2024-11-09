@@ -33,6 +33,8 @@
     prom_metrics_profile_path: "metrics-aggregated.yaml"
     prom_token: "{{ lookup('vars', 'PROM_TOKEN_IKS_' ~ (item | upper)) }}"
     env: "iks"
+    uuid: "{{ tag_uuid }}"
+    cluster: "{{ item }}"
   loop: 
     - karpenter
     - cas
@@ -60,14 +62,14 @@
     - karpenter
     - cas
 
-- name: wait 5 minutes
+- name: wait 10 minutes
   ansible.builtin.wait_for:
-    timeout: 600
+    timeout: 1200
 
 - name: Run kube-burner on all clusters
   become: yes
   ansible.builtin.shell: |
-    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }} --timeout 1h
+    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
   register: benchmark_result
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"

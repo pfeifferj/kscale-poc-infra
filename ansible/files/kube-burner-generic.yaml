@@ -22,13 +22,13 @@ jobs:
     waitWhenFinished: true
     objects:
       - objectTemplate: files/templates/generic/deployment.yaml
-        replicas: 1 
+        replicas: 8
       - objectTemplate: files/templates/generic/configmap.yaml
-        replicas: 1
+        replicas: 8
       - objectTemplate: files/templates/generic/secret.yaml
-        replicas: 1
+        replicas: 8
       - objectTemplate: files/templates/generic/service.yaml
-        replicas: 1
+        replicas: 8
 
   - name: api-intensive-patch
     jobType: patch

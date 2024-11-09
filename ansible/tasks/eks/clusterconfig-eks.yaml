@@ -32,7 +32,7 @@
     chart_ref: autoscaler/cluster-autoscaler
     release_namespace: cas
     set_values:
-      - value: "'autoDiscovery.clusterName'={{ clusters_eks['eks_cas'] }}"
+      - value: "autoDiscovery.clusterName=cas-eks"
         value_type: string
     environment:
       KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
@@ -90,12 +90,12 @@
 
 - name: Set Prometheus token fact
   set_fact:
-    "PROM_TOKEN_IKS_{{ item.item | upper }}": "{{ item.resources[0].data.token | b64decode }}"
+    "PROM_TOKEN_EKS_{{ item.item | upper }}": "{{ item.resources[0].data.token | b64decode }}"
   loop: "{{ prometheus_sa_token.results }}"
 
 - name: Set Prometheus endpoint facts for port-forwarded services
   set_fact:
-    "PROM_ENDPOINT_EKS_{{ item.cluster | upper }}": "http://localhost:{{ item.port }}"
+    "PROM_ENDPOINT_EKS_{{ item.cluster | upper }}": "http://127.0.0.1:{{ item.port }}"
   loop:
     - { cluster: 'karpenter', port: 9093 }
     - { cluster: 'cas', port: 9094 }

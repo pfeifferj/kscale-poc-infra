@@ -89,7 +89,7 @@
 
 - name: Set Prometheus endpoint facts for port-forwarded services
   set_fact:
-    "PROM_ENDPOINT_IKS_{{ item.cluster | upper }}": "http://localhost:{{ item.port }}"
+    "PROM_ENDPOINT_IKS_{{ item.cluster | upper }}": "http://127.0.0.1:{{ item.port }}"
   loop:
     - { cluster: 'karpenter', port: 9091 }
     - { cluster: 'cas', port: 9092 }

@@ -24,6 +24,6 @@ jobs:
       - objectTemplate: files/templates/heterogenous/deployment-memory-s
         replicas: 4  
       - objectTemplate: files/templates/heterogenous/deployment-memory-m
-        replicas: 4
+        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-memory-l
-        replicas: 4
+        replicas: 16

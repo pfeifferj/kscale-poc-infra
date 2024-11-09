@@ -22,8 +22,8 @@ jobs:
     waitWhenFinished: true
     objects:
       - objectTemplate: files/templates/heterogenous/deployment-cpu-s
-        replicas: 4  
+        replicas: 4
       - objectTemplate: files/templates/heterogenous/deployment-cpu-m
-        replicas: 4
+        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-cpu-l
-        replicas: 4
+        replicas: 16
