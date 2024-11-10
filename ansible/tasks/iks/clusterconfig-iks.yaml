@@ -12,6 +12,9 @@
     values: 
       grafana:
         enabled: false
+      prometheus:
+        prometheusSpec:
+          enableAdminApi: true
   loop:
     - karpenter
     - cas
@@ -31,8 +34,16 @@
     set_values:
       - value: "'autoDiscovery.clusterName'=cas-iks"
         value_type: string
+    values:
+      workerpools:
+        - default:
+            enabled: true
+            max: 10
+            min: 1
     environment:
       KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+
 
 # - name: Deploy Karpenter Autoscaler (IKS)
 #   kubernetes.core.helm:

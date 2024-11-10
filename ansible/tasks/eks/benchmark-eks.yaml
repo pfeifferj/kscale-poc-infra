@@ -68,6 +68,7 @@
 
 - name: Run kube-burner on all clusters
   become: yes
+  ignore_errors: yes 
   ansible.builtin.shell: |
     /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-eks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
   register: benchmark_result
@@ -79,6 +80,28 @@
   loop: 
     - karpenter
     - cas
+  async: 7200
+  poll: 0
+
+- name: wait for benchmarks to finish
+  ansible.builtin.async_status:
+    jid: "{{ benchmark_result.ansible_job_id }}"
+  register: benchmark_result
+  until: benchmark_result.finished
+  retries: 480   
+  delay: 30  
+
+- name: create prometheus snapshot
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ item.port }}/api/v1/admin/tsdb/snapshot"
+    method: POST
+    return_content: yes
+    status_code: 200
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}"
+  loop: 
+      - { cluster: 'karpenter', port: 9093 }
+      - { cluster: 'cas', port: 9094 }
 
 - name: stop and disable port-forward service for each cluster
   ansible.builtin.systemd:

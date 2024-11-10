@@ -23,8 +23,8 @@ module "eks_al2" {
       ami_type      = "AL2_x86_64"
       instance_type = "m5.large"
 
-      min_size = var.worker_pool_count
-      max_size = var.worker_pool_count
+      min_size = 1
+      max_size = 10
       # This value is ignored after the initial creation
       # https://github.com/bryantbiggs/eks-desired-size-hack
       desired_size = var.worker_pool_count

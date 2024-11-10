@@ -11,7 +11,10 @@
     create_namespace: true
     values: 
       grafana:
-        enabled: false
+        enabled: false  
+      prometheus:
+        prometheusSpec:
+          enableAdminApi: true
   loop:
     - karpenter
     - cas

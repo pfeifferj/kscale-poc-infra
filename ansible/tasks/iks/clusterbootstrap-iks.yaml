@@ -25,6 +25,17 @@
         - name: us-south-3
           subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
   ignore_errors: yes 
+  async: 7200
+  poll: 0
+  register: terraform_create_cluster
+
+- name: wait for terraform cluster creation to finish
+  ansible.builtin.async_status:
+    jid: "{{ terraform_create_cluster.ansible_job_id }}"
+  register: terraform_cluster_result
+  until: terraform_cluster_result.finished
+  retries: 480   
+  delay: 30  
 
 - name: Find kubeconfig paths
   find:
