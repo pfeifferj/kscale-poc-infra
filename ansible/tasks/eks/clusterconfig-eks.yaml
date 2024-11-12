@@ -37,8 +37,11 @@
     set_values:
       - value: "autoDiscovery.clusterName=cas-eks"
         value_type: string
-    environment:
-      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
 
 - name: Create service account for Prometheus
   kubernetes.core.k8s:

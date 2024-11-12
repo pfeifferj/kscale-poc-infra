@@ -73,19 +73,9 @@ module "eks" {
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = [var.flavour]
 
-      min_size     = var.worker_pool_count
-      max_size     = var.worker_pool_count
+      min_size     = 1
+      max_size     = 10
       desired_size = var.worker_pool_count
-
-      taints = {
-        # This Taint aims to keep just EKS Addons and Karpenter running on this MNG
-        # The pods that do not tolerate this taint should run on nodes created by Karpenter
-        addons = {
-          key    = "CriticalAddonsOnly"
-          value  = "true"
-          effect = "NO_SCHEDULE"
-        },
-      }
     }
   }
 

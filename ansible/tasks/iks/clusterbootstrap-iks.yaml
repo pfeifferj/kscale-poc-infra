@@ -27,13 +27,13 @@
   ignore_errors: yes 
   async: 7200
   poll: 0
-  register: terraform_create_cluster
+  register: terraform_create_cluster_iks
 
 - name: wait for terraform cluster creation to finish
   ansible.builtin.async_status:
-    jid: "{{ terraform_create_cluster.ansible_job_id }}"
-  register: terraform_cluster_result
-  until: terraform_cluster_result.finished
+    jid: "{{ terraform_create_cluster_iks.ansible_job_id }}"
+  register: terraform_cluster_result_iks
+  until: terraform_cluster_result_iks.finished
   retries: 480   
   delay: 30  
 

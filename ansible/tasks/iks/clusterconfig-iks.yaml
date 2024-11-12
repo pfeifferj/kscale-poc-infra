@@ -43,8 +43,6 @@
     environment:
       KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
 
-
-
 # - name: Deploy Karpenter Autoscaler (IKS)
 #   kubernetes.core.helm:
 #     name: karpenter

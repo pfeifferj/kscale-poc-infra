@@ -14,6 +14,21 @@
       worker_count: 1
       worker_pool_count: 3
   ignore_errors: yes 
+  async: 7200
+  poll: 0
+  register: terraform_create_cluster_eks
+  environment: 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+
+- name: wait for terraform cluster creation to finish
+  ansible.builtin.async_status:
+    jid: "{{ terraform_create_cluster_eks.ansible_job_id }}"
+  register: terraform_cluster_result_eks
+  until: terraform_cluster_result_eks.finished
+  retries: 480   
+  delay: 30  
 
 - name: Generate kubeconfig for EKS clusters
   command: aws eks update-kubeconfig --name {{ item }}-eks --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml
