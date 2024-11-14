@@ -16,7 +16,7 @@
 
 - name: Prepare kube-burner configuration files
   ansible.builtin.copy:
-    src: files/kube-burner-generic.yaml # change this to run different experiment
+    src: files/kube-burner-heterogenous.yaml # files/kube-burner-generic.yaml # change this to run different experiment
     dest: kube-burner-config.yaml
 
 - name: Copy metrics profile file
@@ -66,44 +66,141 @@
   ansible.builtin.wait_for:
     timeout: 1200
 
-- name: Run kube-burner on all clusters
-  become: yes
-  ignore_errors: yes 
-  ansible.builtin.shell: |
-    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-eks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
-  register: benchmark_result
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}"
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  loop: 
-    - karpenter
-    - cas
-  async: 7200
-  poll: 0
+# - name: Run kube-burner on all clusters
+#   become: yes
+#   ignore_errors: yes 
+#   ansible.builtin.shell: |
+#     /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-eks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
+#   register: benchmark_run_eks
+#   environment:
+#     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}"
+#     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+#     AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+#     AWS_DEFAULT_REGION: "us-east-1"
+#   loop: 
+#     - karpenter
+#     - cas
 
-- name: wait for benchmarks to finish
-  ansible.builtin.async_status:
-    jid: "{{ benchmark_result.ansible_job_id }}"
-  register: benchmark_result
-  until: benchmark_result.finished
-  retries: 480   
-  delay: 30  
+- name: ensure jq is installed
+  ansible.builtin.package:
+    name: jq
+    state: present
 
-- name: create prometheus snapshot
-  ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ item.port }}/api/v1/admin/tsdb/snapshot"
-    method: POST
+- name: create output directories
+  file:
+    path: "{{ playbook_dir }}/experiment-data/{{ item.cluster }}"
+    state: directory
+  loop:
+    - { cluster: 'karpenter', port: 9093 }
+    - { cluster: 'cas', port: 9094 }
+  loop_control:
+    loop_var: item
+
+- name: Set prometheus queries
+  set_fact:
+    prometheus_queries:
+      - query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{apiserver="kube-apiserver", verb!~"WATCH", subresource!="log"}[2m])) by (verb,resource,subresource,instance,le)) > 0'
+        metricName: 'API99thLatency'
+      - query: 'sum(irate(apiserver_request_total{apiserver="kube-apiserver",verb!="WATCH",subresource!="log"}[2m])) by (verb,instance,resource,code) > 0'
+        metricName: 'APIRequestRate'
+      - query: 'sum(apiserver_current_inflight_requests{}) by (request_kind) > 0'
+        metricName: 'APIInflightRequests'
+      - query: '(sum(container_memory_rss{name!="",container!="POD",namespace=~"openshift-(etcd|oauth-apiserver|.*apiserver|ovn-kubernetes|sdn|ingress|authentication|.*controller-manager|.*scheduler)"}) by (container, pod, namespace, node) and on (node) kube_node_role{role="master"}) > 0'
+        metricName: 'containerMemory-Masters'
+      - query: '(sum(irate(container_cpu_usage_seconds_total{name!="",container!="POD",namespace=~"openshift-(etcd|oauth-apiserver|sdn|ovn-kubernetes|.*apiserver|authentication|.*controller-manager|.*scheduler)"}[2m]) * 100) by (container, pod, namespace, node) and on (node) kube_node_role{role="master"}) > 0'
+        metricName: 'containerCPU-Masters'
+      - query: '(sum(irate(container_cpu_usage_seconds_total{pod!="",container="prometheus",namespace="openshift-monitoring"}[2m]) * 100) by (container, pod, namespace, node) and on (node) kube_node_role{role="infra"}) > 0'
+        metricName: 'containerCPU-Prometheus'
+      - query: '(avg(irate(container_cpu_usage_seconds_total{name!="",container!="POD",namespace=~"openshift-(sdn|ovn-kubernetes|ingress)"}[2m]) * 100 and on (node) kube_node_role{role="worker"}) by (namespace, container)) > 0'
+        metricName: 'containerCPU-AggregatedWorkers'
+      - query: '(avg(irate(container_cpu_usage_seconds_total{name!="",container!="POD",namespace=~"openshift-(sdn|ovn-kubernetes|ingress|monitoring|image-registry|logging)"}[2m]) * 100 and on (node) kube_node_role{role="infra"}) by (namespace, container)) > 0'
+        metricName: 'containerCPU-AggregatedInfra'
+      - query: '(sum(container_memory_rss{pod!="",namespace="openshift-monitoring",name!="",container="prometheus"}) by (container, pod, namespace, node) and on (node) kube_node_role{role="infra"}) > 0'
+        metricName: 'containerMemory-Prometheus'
+      - query: 'avg(container_memory_rss{name!="",container!="POD",namespace=~"openshift-(sdn|ovn-kubernetes|ingress)"} and on (node) kube_node_role{role="worker"}) by (container, namespace)'
+        metricName: 'containerMemory-AggregatedWorkers'
+      - query: 'avg(container_memory_rss{name!="",container!="POD",namespace=~"openshift-(sdn|ovn-kubernetes|ingress|monitoring|image-registry|logging)"} and on (node) kube_node_role{role="infra"}) by (container, namespace)'
+        metricName: 'containerMemory-AggregatedInfra'
+      - query: '(sum(irate(node_cpu_seconds_total[2m])) by (mode,instance) and on (instance) label_replace(kube_node_role{role="master"}, "instance", "$1", "node", "(.+)")) > 0'
+        metricName: 'nodeCPU-Masters'
+      - query: '(avg((sum(irate(node_cpu_seconds_total[2m])) by (mode,instance) and on (instance) label_replace(kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)"))) by (mode)) > 0'
+        metricName: 'nodeCPU-AggregatedWorkers'
+      - query: '(avg((sum(irate(node_cpu_seconds_total[2m])) by (mode,instance) and on (instance) label_replace(kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)"))) by (mode)) > 0'
+        metricName: 'nodeCPU-AggregatedInfra'
+      - query: 'avg(node_memory_MemAvailable_bytes) by (instance) and on (instance) label_replace(kube_node_role{role="master"}, "instance", "$1", "node", "(.+)")'
+        metricName: 'nodeMemoryAvailable-Masters'
+      - query: 'avg(node_memory_MemAvailable_bytes and on (instance) label_replace(kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryAvailable-AggregatedWorkers'
+      - query: 'avg(node_memory_MemAvailable_bytes and on (instance) label_replace(kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryAvailable-AggregatedInfra'
+      - query: 'avg(node_memory_Active_bytes) by (instance) and on (instance) label_replace(kube_node_role{role="master"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryActive-Masters'
+      - query: 'avg(node_memory_Active_bytes and on (instance) label_replace(kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryActive-AggregatedWorkers'
+      - query: 'avg(node_memory_Active_bytes and on (instance) label_replace(kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryActive-AggregatedInfra'
+      - query: 'avg(node_memory_Cached_bytes) by (instance) + avg(node_memory_Buffers_bytes) by (instance) and on (instance) label_replace(kube_node_role{role="master"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryCached+nodeMemoryBuffers-Masters'
+      - query: 'avg(node_memory_Cached_bytes + node_memory_Buffers_bytes and on (instance) label_replace(kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryCached+nodeMemoryBuffers-AggregatedWorkers'
+      - query: 'avg(node_memory_Cached_bytes + node_memory_Buffers_bytes and on (instance) label_replace(kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'nodeMemoryCached+nodeMemoryBuffers-AggregatedInfra'
+      - query: 'irate(node_network_receive_bytes_total{device=~"^(ens|eth|bond|team).*"}[2m]) and on (instance) label_replace(kube_node_role{role="master"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'rxNetworkBytes-Masters'
+      - query: 'avg(irate(node_network_receive_bytes_total{device=~"^(ens|eth|bond|team).*"}[2m]) and on (instance) label_replace(kube_node_role{role="worker"}, "instance", "$1", "node", "(.+"))) by (device)'
+        metricName: 'rxNetworkBytes-AggregatedWorkers'
+      - query: 'avg(irate(node_network_receive_bytes_total{device=~"^(ens|eth|bond|team).*"}[2m]) and on (instance) label_replace(kube_node_role{role="infra"}, "instance", "$1", "node", "(.+"))) by (device)'
+        metricName: 'rxNetworkBytes-AggregatedInfra'
+      - query: 'irate(node_network_transmit_bytes_total{device=~"^(ens|eth|bond|team).*"}[2m]) and on (instance) label_replace(kube_node_role{role="master"}, "instance", "$1", "node", "(.+)"))'
+        metricName: 'txNetworkBytes-Masters'
+      - query: 'avg(irate(node_network_transmit_bytes_total{device=~"^(ens|eth|bond|team).*"}[2m]) and on (instance) label_replace(kube_node_role{role="worker"}, "instance", "$1", "node", "(.+"))) by (device)'
+        metricName: 'txNetworkBytes-AggregatedWorkers'
+      - query: 'avg(irate(node_network_transmit_bytes_total{device=~"^(ens|eth|bond|team).*"}[2m]) and on (instance) label_replace(kube_node_role{role="infra"}, "instance", "$1", "node", "(.+"))) by (device)'
+        metricName: 'txNetworkBytes-AggregatedInfra'
+
+- name: set current epoch time
+  set_fact:
+    current_epoch: "{{ lookup('pipe', 'date +%s') | int }}"
+
+- name: set start and end time for prometheus query
+  ansible.builtin.set_fact:
+    start_time: "{{ current_epoch | int - 7200 }}"  
+    end_time: "{{ current_epoch }}"
+
+- name: fetch range metrics from prometheus for each cluster and query
+  uri:
+    url: "http://127.0.0.1:{{ cluster_info.port }}/api/v1/query_range"
+    method: GET
     return_content: yes
+    body_format: form-urlencoded
+    body:
+      query: "{{ prom_query.query }}"
+      start: "{{ start_time | int }}"
+      end: "{{ end_time | int }}"
+      step: "30s"
     status_code: 200
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}"
-  loop: 
+  register: range_query_response
+  loop: "{{ prometheus_queries | product(cluster_list) | list }}"
+  loop_control:
+    loop_var: item
+    label: "{{ item.1.cluster }} - {{ item.0.metricName }}"
+  vars:
+    prom_query: "{{ item.0 }}"
+    cluster_info: "{{ item.1 }}"
+    cluster_list:
       - { cluster: 'karpenter', port: 9093 }
       - { cluster: 'cas', port: 9094 }
 
+- name: save range query results to json files
+  copy:
+    content: "{{ item.content }}"
+    dest: "{{ playbook_dir }}/experiment-data/{{ item.item.1.cluster }}/{{ item.item.0.metricName }}.json"
+  loop: "{{ range_query_response.results }}"
+  loop_control:
+    label: "{{ item.item.1.cluster }} - {{ item.item.0.metricName }}"
+
 - name: stop and disable port-forward service for each cluster
+  become: yes
   ansible.builtin.systemd:
     name: "port-forward-{{ item }}-eks"
     state: stopped

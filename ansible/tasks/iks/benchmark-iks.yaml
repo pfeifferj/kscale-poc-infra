@@ -71,7 +71,7 @@
   ignore_errors: yes 
   ansible.builtin.shell: |
     /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
-  register: benchmark_result
+  register: benchmark_run_iks
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
   loop: 
@@ -80,25 +80,46 @@
   async: 7200
   poll: 0
 
-- name: wait for benchmarks to finish
-  ansible.builtin.async_status:
-    jid: "{{ benchmark_result.ansible_job_id }}"
-  register: benchmark_result
-  until: benchmark_result.finished
-  retries: 480   
-  delay: 30  
-
 - name: create prometheus snapshot
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ item.port }}/api/v1/admin/tsdb/snapshot"
     method: POST
     return_content: yes
     status_code: 200
+  register: snapshot_response
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}"
   loop: 
       - { cluster: 'karpenter', port: 9091 }
       - { cluster: 'cas', port: 9092 }         
+
+- name: extract snapshot name from response
+  set_fact:
+    snapshot_name: "{{ snapshot_response.results[0].json.data.name }}"
+
+- name: get prometheus pod name
+  command: >
+    kubectl get po -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{.items[0].metadata.name}'
+  register: prometheus_pod_name
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}"
+  loop:
+    - { cluster: 'karpenter' }
+    - { cluster: 'cas' }
+  loop_control:
+    loop_var: item
+
+- name: copy snapshot to local directory
+  command: >
+    kubectl exec -n monitoring {{ prometheus_pod_name.stdout }} -- tar cf - /prometheus/snapshots/{{ snapshot_name }} |
+    tar xf - -C {{ playbook_dir }}/{{ snapshot_name }}-{{ item.cluster }}
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item.cluster | upper)) }}"
+  loop:
+    - { cluster: 'karpenter' }
+    - { cluster: 'cas' }
+  loop_control:
+    loop_var: item
 
 - name: stop and disable port-forward service for each cluster
   become: yes

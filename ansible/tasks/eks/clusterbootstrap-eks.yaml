@@ -28,7 +28,7 @@
   register: terraform_cluster_result_eks
   until: terraform_cluster_result_eks.finished
   retries: 480   
-  delay: 30  
+  delay: 30
 
 - name: Generate kubeconfig for EKS clusters
   command: aws eks update-kubeconfig --name {{ item }}-eks --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml

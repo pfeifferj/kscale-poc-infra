@@ -14,7 +14,7 @@
         enabled: false
       prometheus:
         prometheusSpec:
-          enableAdminApi: true
+          enableAdminAPI: true
   loop:
     - karpenter
     - cas
@@ -23,14 +23,15 @@
 
 - name: Add cluster autoscaler chart repo
   kubernetes.core.helm_repository:
-    name: autoscaler
+    name: autoscaler_iks
     repo_url: "https://icr.io/helm/iks-charts"
 
 - name: Deploy Cluster Autoscaler (IKS)
   kubernetes.core.helm:
     name: cas
-    chart_ref: autoscaler/cluster-autoscaler
+    chart_ref: autoscaler_iks/cluster-autoscaler
     release_namespace: cas
+    create_namespace: true
     set_values:
       - value: "'autoDiscovery.clusterName'=cas-iks"
         value_type: string
@@ -40,8 +41,8 @@
             enabled: true
             max: 10
             min: 1
-    environment:
-      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
 
 # - name: Deploy Karpenter Autoscaler (IKS)
 #   kubernetes.core.helm:

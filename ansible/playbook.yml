@@ -3,7 +3,7 @@
   connection: local
   vars_files:
     - secrets.yaml
-  gather_facts: no
+  gather_facts: yes
   vars:
     clusters:
       - karpenter

@@ -5,5 +5,11 @@
     purge_workspace: true
     complex_vars: true
     variables:
+      tag_uuid: "{{ tag_uuid }}"
       aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
       aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+      flavour: "m5.large"
+      kube_version: "1.29" # EKS only uspports major.minor
+      worker_count: 1
+      worker_pool_count: 3
+  
