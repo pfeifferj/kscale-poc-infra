@@ -16,7 +16,7 @@
 
 - name: Prepare kube-burner configuration files
   ansible.builtin.copy:
-    src: files/kube-burner-heterogenous.yaml # files/kube-burner-generic.yaml # change this to run different experiment
+    src: files/kube-burner-homogenous.yaml # files/kube-burner-generic.yaml # files/kube-burner-heterogenous.yaml # change this to run different experiment
     dest: kube-burner-config.yaml
 
 - name: Copy metrics profile file
@@ -70,7 +70,7 @@
   become: yes
   ignore_errors: yes 
   ansible.builtin.shell: |
-    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-eks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
+    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-eks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 10min
   register: benchmark_run_eks
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}"
@@ -101,6 +101,16 @@
     prometheus_queries:
       - query: 'count(kube_node_info)'
         metricName: 'NodeCount'
+      - query: 'avg(node_load1) by (instance)'
+        metricName: 'CPUByInstance'
+      - query: '100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[1m])) by (instance) * 100)'
+        metricName: 'CPUPercentageAllCores'
+      - query: '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
+        metricName: 'NodeMemoryPercantage'
+      - query: 'rate(kube_pod_start_time_seconds{condition="Running"}[5m]) - rate(kube_pod_start_time_seconds{condition="Pending"}[5m])'
+        metricName: 'PodLatency'
+      - query: '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
+        metricName: 'NodeLatency'
       - query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{apiserver="kube-apiserver", verb!~"WATCH", subresource!="log"}[2m])) by (verb,resource,subresource,instance,le)) > 0'
         metricName: 'API99thLatency'
       - query: 'sum(irate(apiserver_request_total{apiserver="kube-apiserver",verb!="WATCH",subresource!="log"}[2m])) by (verb,instance,resource,code) > 0'

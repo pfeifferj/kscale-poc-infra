@@ -44,13 +44,22 @@
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
 
-# - name: Deploy Karpenter Autoscaler (IKS)
-#   kubernetes.core.helm:
-#     name: karpenter
-#     chart_ref: pfeifferj/ibm-cloud-karpenter
-#     release_namespace: karpenter
-#   environment:
-#     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER' }}"
+- name: Deploy Karpenter Autoscaler (IKS)
+  kubernetes.core.helm:
+    name: karpenter
+    chart_ref: pfeifferj/ibm-cloud-karpenter/charts
+    release_namespace: karpenter
+    create_namespace: true
+    values:
+      image:
+        repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud
+        tag: "sha256:f1c39cce0ff9d1e6fcde156f6562aeb0982f373b2606bbcb0eb16f9d5eb6d074"
+        pullPolicy: IfNotPresent
+      credentials:
+        ibmApiKey: "{{ IBM_CLOUD_TOKEN }}"
+        region: "us-south"
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
 
 - name: Create service account for Prometheus
   kubernetes.core.k8s:

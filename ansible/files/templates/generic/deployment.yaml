@@ -6,7 +6,7 @@ metadata:
     group: load
     svc: api-intensive-{{.Replica}}
 spec:
-  replicas: 10 # 100
+  replicas: 200
   selector:
     matchLabels:
       name: api-intensive-{{.Replica}}

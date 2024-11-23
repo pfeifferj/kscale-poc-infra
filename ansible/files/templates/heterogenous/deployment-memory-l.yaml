@@ -12,9 +12,9 @@ spec:
           requests:
             memory: "2Gi"
           limits:
-            memory: "4Gi"
+            memory: "32Gi"
         command: ["stress"]
-        args: ["--vm", "2", "--vm-bytes", "3G", "--timeout", "600"]
+        args: ["--vm", "2", "--vm-bytes", "32G", "--timeout", "600"]
       restartPolicy: Never
   backoffLimit: 4
   

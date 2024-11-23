@@ -21,6 +21,6 @@ spec:
             memory: "512Mi"
           limits:
             cpu: "2000m"
-            memory: "1Gi"
+            memory: "5Gi"
         command: ["stress"]
         args: ["--cpu", "2", "--timeout", "600"]
