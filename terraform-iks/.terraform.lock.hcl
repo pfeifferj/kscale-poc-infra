@@ -2,14 +2,14 @@
 # Manual edits may be lost in future updates.
 
 provider "registry.terraform.io/ibm-cloud/ibm" {
-  version = "1.70.0"
+  version = "1.71.2"
   hashes = [
-    "h1:QYZadgKHGtwrDTWEFk1Uhv5oCg5mbheeZ93SBjX0fao=",
-    "zh:08ec1fa0ba28ee3ea80bc3c99b52a9431a87d3a2bed93c27b3a945c41939c7e7",
-    "zh:0e2ef4524dd9cec156a75f214949f8905d119736b60e06e8368e2198a7cabd49",
-    "zh:5afa9f0f19612ae78b386152957271d433656e3d4e8731c9a628c53b77fbb348",
-    "zh:9f206e7e8e0e273c06ef2389222d482472249e5a47da6c1da1aa929dbc1615f2",
-    "zh:d03743f131c3f5500d1d963b673682f810bac3cc4863e8e263a20be8b026a639",
-    "zh:ea16444662766c6c9da0d31101982bbf310e0317f0ea405f101479f94ff7f3e0",
+    "h1:XPAHKujiVTDntYlaLoiuWaOt/+XzShx7VvgLNuCYcCU=",
+    "zh:129dc1989851d5fc917c3bd219a68c0fab3d6d78b10da8e4ede5398629bb8b70",
+    "zh:54a4f9e0832d57c2145aa721950bf7e7b54cc3c926d316053f5e45576d187cbb",
+    "zh:77de733f57f6397f5fd71cf5bab29bdf6c5551e0967e7173ab6ebd08a199b80f",
+    "zh:989d9c9d3b78d902125e4273d1ab60a176a6794beb8fe30d27d58404f4a9cf83",
+    "zh:a9ddf83164b88e4d670d995268605480d837cc163bd0b0b15dce3161ab4049e6",
+    "zh:e23c3e2b56307ae761c42f786f356e49b4c5a20a0328cb03526c58096f3123f7",
   ]
 }
