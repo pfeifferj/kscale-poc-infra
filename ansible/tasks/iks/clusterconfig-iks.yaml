@@ -26,6 +26,11 @@
     name: autoscaler_iks
     repo_url: "https://icr.io/helm/iks-charts"
 
+- name: Add karpenter provider chart repo
+  kubernetes.core.helm_repository:
+    name: karpenter-provider-ibm
+    repo_url: "https://pfeifferj.github.io/karpenter-provider-ibm-cloud"
+
 - name: Deploy Cluster Autoscaler (IKS)
   kubernetes.core.helm:
     name: cas
@@ -47,7 +52,8 @@
 - name: Deploy Karpenter Autoscaler (IKS)
   kubernetes.core.helm:
     name: karpenter
-    chart_ref: pfeifferj/ibm-cloud-karpenter/charts
+    chart_ref: karpenter-provider-ibm/karpenter
+    chart_version: 0.35.0
     release_namespace: karpenter
     create_namespace: true
     values:
