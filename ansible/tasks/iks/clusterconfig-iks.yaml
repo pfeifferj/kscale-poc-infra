@@ -44,7 +44,7 @@
       workerpools:
         - default:
             enabled: true
-            max: 10
+            max: 9
             min: 1
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
@@ -59,7 +59,7 @@
     values:
       image:
         repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud/controller
-        digest: "sha256:2f97b9e74575a45c09e01dbb708bb8cb37b0ba8c4b62f3a7d27a3aec3a506128"
+        digest: "sha256:7f2c6252bd280fc473631240a43dbfa17c6c4eae08001092c7525c59806d7c86"
         pullPolicy: IfNotPresent
       credentials:
         ibmApiKey: "{{ IBM_CLOUD_TOKEN }}"

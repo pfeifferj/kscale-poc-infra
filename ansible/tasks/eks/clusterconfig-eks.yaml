@@ -42,7 +42,7 @@
       workerpools:
         - default:
             enabled: true
-            max: 10
+            max: 3
             min: 1
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 

@@ -4,7 +4,6 @@
     name: "{{ item }}"
     vpc_id: "{{ VPC_ID }}"
     flavor: "bx2.2x8" 
-    tag_uuid: "{{ tag_uuid }}"
     zones:
       - name: us-south-1
         subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"

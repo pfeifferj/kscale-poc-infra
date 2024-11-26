@@ -12,66 +12,51 @@ global:
 
 jobs:
   - name: cpu-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
+    jobIterations: 10
+    qps: 4
+    burst: 4
     namespacedIterations: true
     namespace: cpu-intensive
-    podWait: true
+    podWait: false
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: files/templates/heterogenous/deployment-cpu-s
-        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-cpu-m
-        replicas: 16
-      - objectTemplate: files/templates/heterogenous/deployment-cpu-l
-        replicas: 32
+        replicas: 28
   - name: memory-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
+    jobIterations: 10
+    qps: 4
+    burst: 4
     namespacedIterations: true
     namespace: memory-intensive
-    podWait: true
+    podWait: false
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: files/templates/heterogenous/deployment-memory-s
-        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-memory-m
-        replicas: 16
-      - objectTemplate: files/templates/heterogenous/deployment-memory-l
-        replicas: 32
+        replicas: 28
   - name: network-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
+    jobIterations: 10
+    qps: 4
+    burst: 4
     namespacedIterations: true
     namespace: network-intensive
-    podWait: true
+    podWait: false
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: files/templates/heterogenous/deployment-network-s
-        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-network-m
-        replicas: 16
-      - objectTemplate: files/templates/heterogenous/deployment-network-l
-        replicas: 32
+        replicas: 28
   - name: io-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
+    jobIterations: 10
+    qps: 4
+    burst: 4
     namespacedIterations: true
     namespace: io-intensive
-    podWait: true
+    podWait: false
     cleanup: true
     waitWhenFinished: true
     objects:
-      - objectTemplate: files/templates/heterogenous/deployment-io-s
-        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-io-m
-        replicas: 16
-      - objectTemplate: files/templates/heterogenous/deployment-io-l
-        replicas: 32
+        replicas: 28
+        
