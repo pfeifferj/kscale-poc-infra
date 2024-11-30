@@ -1,12 +1,25 @@
 ---
-# Create clusters with Terraform
-- name: Create AWS clusters
-  community.general.terraform:
-    project_path: "{{ playbook_dir }}/../terraform-eks"
-    state: present
-    force_init: true
-    complex_vars: true
-    variables:
+# Define variables first
+- name: Set role variables
+  set_fact:
+    cloud_provider_env:
+      AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default(omit) }}"
+      AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default(omit) }}"
+      AWS_DEFAULT_REGION: "{{ 'us-east-1' if cloud_provider == 'eks' else omit }}"
+    iks_zones:
+      - name: us-south-1
+        subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"
+      - name: us-south-2
+        subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
+      - name: us-south-3
+        subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
+
+# Set provider-specific Terraform variables
+- name: Set Terraform variables
+  set_fact:
+    terraform_vars: "{{ eks_vars if cloud_provider == 'eks' else iks_vars }}"
+  vars:
+    eks_vars:
       tag_uuid: "{{ tag_uuid }}"
       aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
       aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
@@ -14,86 +27,51 @@
       kube_version: "1.29"
       worker_count: 1
       worker_pool_count: 3
-  environment: 
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  async: 7200
-  poll: 0
-  register: terraform_create_cluster_eks
-  when: cloud_provider == 'eks'
-
-- name: Create IBM clusters
-  community.general.terraform:
-    project_path: "{{ playbook_dir }}/../terraform-iks"
-    state: present
-    force_init: true
-    complex_vars: true
-    variables:
-      flavour: "bx2.2x8"
+    iks_vars:
+      tag_uuid: "{{ tag_uuid }}"
       ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
+      flavour: "bx2.2x8"
       kube_version: "1.29.10"
+      worker_count: 1
+      worker_pool_count: 1
       resource_group: "{{ RESOURCE_GROUP_ID }}"
       region: "us-south"
       vpc_name: "kscale-workload-vpc"
       vpc_id: "{{ VPC_ID }}"
-      worker_count: 1
-      worker_pool_count: 1
-      tag_uuid: "{{ tag_uuid }}"
+      zones: "{{ iks_zones }}"
       kube_config_path: "{{ playbook_dir }}"
-      zones:
-        - name: us-south-1
-          subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"
-        - name: us-south-2
-          subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
-        - name: us-south-3
-          subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
-  async: 7200
-  poll: 0
-  register: terraform_create_cluster_iks
-  when: cloud_provider == 'iks'
 
-# Wait for cluster creation
-- name: Wait for AWS cluster creation
-  ansible.builtin.async_status:
-    jid: "{{ terraform_create_cluster_eks.ansible_job_id }}"
-  register: terraform_cluster_result_eks
-  until: terraform_cluster_result_eks.finished
-  retries: 480
-  delay: 30
-  when: cloud_provider == 'eks'
+# Create clusters with Terraform
+- name: Create clusters
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-{{ cloud_provider }}"
+    state: present
+    force_init: true
+    complex_vars: true
+    variables: "{{ terraform_vars }}"
+  environment: "{{ cloud_provider_env }}"
+  register: terraform_create_cluster
 
-- name: Wait for IBM cluster creation
-  ansible.builtin.async_status:
-    jid: "{{ terraform_create_cluster_iks.ansible_job_id }}"
-  register: terraform_cluster_result_iks
-  until: terraform_cluster_result_iks.finished
-  retries: 480
-  delay: 30
-  when: cloud_provider == 'iks'
+# Ensure kubeconfig directories exist
+- name: Create kubeconfig directories
+  file:
+    path: "{{ playbook_dir }}/files/kubeconfig-{{ cloud_provider }}-{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - karpenter
+    - cas
 
 # Configure cluster access
-- name: Generate kubeconfig for EKS clusters
-  command: aws eks update-kubeconfig --name {{ item }}-eks --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml
+- name: Generate kubeconfig for clusters
+  command: >
+    {{ 'aws eks update-kubeconfig' if cloud_provider == 'eks' else 'ibmcloud ks cluster config' }}
+    {{ '--name ' + item + '-eks --region us-east-1' if cloud_provider == 'eks' else '--cluster ' + item }}
+    --kubeconfig {{ playbook_dir }}/files/kubeconfig-{{ cloud_provider }}-{{ item }}/config.yml
   loop:
     - karpenter
     - cas
-  environment: 
-    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "us-east-1"
-  when: cloud_provider == 'eks'
-
-- name: Find kubeconfig paths for IKS
-  find:
-    paths: "{{ playbook_dir }}/files/kubeconfig-iks-{{ item }}"
-    recurse: no
-    file_type: directory
-  loop:
-    - karpenter
-    - cas
-  register: kubeconfig_dirs
-  when: cloud_provider == 'iks'
+  environment: "{{ cloud_provider_env }}"
 
 # Set kubeconfig facts
 - name: Set kubeconfig facts
@@ -102,6 +80,20 @@
   loop:
     - karpenter
     - cas
+
+# Verify cluster access
+- name: Wait for cluster API access
+  command: >
+    kubectl --kubeconfig {{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}
+    get --raw /api
+  register: cluster_api_check
+  until: cluster_api_check.rc == 0
+  retries: 30
+  delay: 10
+  loop:
+    - karpenter
+    - cas
+  environment: "{{ cloud_provider_env }}"
 
 # Wait for nodes
 - name: Wait for cluster nodes to be ready
@@ -116,3 +108,6 @@
     - cas
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
+    AWS_ACCESS_KEY_ID: "{{ cloud_provider_env.AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ cloud_provider_env.AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "{{ cloud_provider_env.AWS_DEFAULT_REGION }}"

@@ -1,5 +1,12 @@
 ---
 # Set start timestamp before deploying workloads
+- name: Set role variables
+  set_fact:
+    cloud_provider_env:
+      AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default(omit) }}"
+      AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default(omit) }}"
+      AWS_DEFAULT_REGION: "{{ 'us-east-1' if cloud_provider == 'eks' else omit }}"
+
 - name: Set experiment start time
   set_fact:
     experiment_start_time: "{{ lookup('pipe', 'date --utc +%Y-%m-%dT%H:%M:%SZ') }}"
@@ -44,8 +51,7 @@
                       memory: "{{ homogeneous_workload.container.resources.memory_limit }}"
                   command: ["stress"]
                   args: "{{ homogeneous_workload.container.args }}"
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}"
+  environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER')}) }}"
   when: workload_scenario == 'homogeneous'
 
 # Deploy heterogeneous workload scenario
@@ -89,8 +95,7 @@
                   command: ["stress"]
                   args: "{{ item.args }}"
       loop: "{{ heterogeneous_workload.cpu_intensive }}"
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}"
+  environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS')}) }}"
   when: workload_scenario == 'heterogeneous'
 
 # Wait for workloads to stabilize

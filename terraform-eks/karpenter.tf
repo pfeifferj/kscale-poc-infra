@@ -55,7 +55,7 @@ module "eks" {
   # Gives Terraform identity admin access to cluster which will
   # allow deploying resources (Karpenter) into the cluster
   enable_cluster_creator_admin_permissions = true
-  cluster_endpoint_public_access           = true
+  cluster_endpoint_public_access          = true
 
   cluster_addons = {
     coredns                = {}
@@ -65,7 +65,7 @@ module "eks" {
   }
 
   vpc_id                   = module.vpc.vpc_id
-  subnet_ids               = module.vpc.private_subnets
+  subnet_ids              = module.vpc.private_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
   eks_managed_node_groups = {
@@ -79,16 +79,7 @@ module "eks" {
     }
   }
 
-  # cluster_tags = merge(local.tags, {
-  #   NOTE - only use this option if you are using "attach_cluster_primary_security_group"
-  #   and you know what you're doing. In this case, you can remove the "node_security_group_tags" below.
-  #  "karpenter.sh/discovery" = local.name
-  # })
-
   node_security_group_tags = merge(local.tags, {
-    # NOTE - if creating multiple security groups with this module, only tag the
-    # security group that Karpenter should utilize with the following tag
-    # (i.e. - at most, only one security group should have this tag in your account)
     "karpenter.sh/discovery" = local.name
   })
 
@@ -129,13 +120,15 @@ module "karpenter_disabled" {
 
 resource "helm_release" "karpenter" {
   namespace           = "kube-system"
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
+  name               = "karpenter"
+  repository         = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
-  chart               = "karpenter"
-  version             = "1.0.0"
-  wait                = false
+  chart              = "karpenter"
+  version            = "1.0.0"
+  wait               = true
+  wait_for_jobs      = true
+  timeout            = 900
 
   values = [
     <<-EOT
@@ -145,8 +138,19 @@ resource "helm_release" "karpenter" {
       clusterName: ${module.eks.cluster_name}
       clusterEndpoint: ${module.eks.cluster_endpoint}
       interruptionQueue: ${module.karpenter.queue_name}
+    replicas: 1
+    controller:
+      resources:
+        requests:
+          cpu: 1
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 1Gi
     EOT
   ]
+
+  depends_on = [module.eks.eks_managed_node_group_autoscaling_groups]
 }
 
 resource "kubectl_manifest" "karpenter_node_class" {

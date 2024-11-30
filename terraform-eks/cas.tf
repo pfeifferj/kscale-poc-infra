@@ -5,6 +5,9 @@ module "eks_al2" {
   cluster_name    = "cas-eks"
   cluster_version = "1.29"
 
+  # Enable IRSA
+  enable_irsa = true
+
   # EKS Addons
   cluster_addons = {
     coredns                = {}
