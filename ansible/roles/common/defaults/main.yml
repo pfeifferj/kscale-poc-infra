@@ -1,0 +1,13 @@
+---
+# Common variables used across roles
+clusters:
+  - karpenter
+  - cas
+
+# Default values that can be overridden
+kube_burner_version: 'V1.10.9'
+kube_burner_arch: 'linux-x86_64'
+
+# Provider flags
+run_iks: "{{ 'IBM_CLOUD' in load_test_targets }}"
+run_eks: "{{ 'AWS' in load_test_targets }}"

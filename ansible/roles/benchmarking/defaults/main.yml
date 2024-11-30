@@ -1,0 +1,48 @@
+---
+# Workload scenario selection (either 'homogeneous' or 'heterogeneous')
+workload_scenario: homogeneous
+
+# Workload configurations
+homogeneous_workload:
+  namespace: homogeneous-workload
+  container:
+    image: quay.io/kako1/stress:22
+    resources:
+      cpu: "2000m"
+      memory_request: "256Mi"
+      memory_limit: "512Mi"
+    args: ["--cpu", "2", "--timeout", "3600", "--vm", "1", "--vm-bytes", "128M", "--io", "2"]
+  replicas: 40
+
+heterogeneous_workload:
+  namespace: heterogeneous-workload
+  cpu_intensive:
+    - size: large
+      replicas: 20
+      cpu: '4000m'
+      memory_request: '512Mi'
+      memory_limit: '1Gi'
+      args: ['--cpu', '4', '--timeout', '3600', '--vm', '2', '--vm-bytes', '256M', '--vm-hang', '1']
+    - size: medium
+      replicas: 30
+      cpu: '2000m'
+      memory_request: '256Mi'
+      memory_limit: '512Mi'
+      args: ['--cpu', '2', '--timeout', '3600', '--vm', '1', '--vm-bytes', '128M', '--io', '2']
+    - size: small
+      replicas: 40
+      cpu: '1000m'
+      memory_request: '128Mi'
+      memory_limit: '256Mi'
+      args: ['--cpu', '1', '--timeout', '3600', '--vm', '1', '--vm-bytes', '64M', '--vm-stride', '128', '--hdd', '1', '--hdd-bytes', '128M']
+
+# Prometheus metrics configuration
+prometheus_queries:
+  - query: 'count(kube_node_info)'
+    metricName: 'NodeCount'
+  - query: '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
+    metricName: 'NodeMemoryPercantage'
+  - query: '100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[1m])) by (instance) * 100)'
+    metricName: 'CPUPercentageAllCores'
+  - query: 'rate(kube_pod_start_time_seconds{condition="Running"}[5m]) - rate(kube_pod_start_time_seconds{condition="Pending"}[5m])'
+    metricName: 'NodeLatency'

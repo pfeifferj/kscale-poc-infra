@@ -17,10 +17,24 @@ spec:
         image: ghcr.io/vish/stress:latest
         resources:
           requests:
-            cpu: "100m"
-            memory: "512Mi"
+            cpu: "1000m"
+            memory: "128Mi"
           limits:
             cpu: "1000m"
-            memory: "1Gi"
+            memory: "256Mi"
         command: ["stress"]
-        args: ["--cpu", "1", "--timeout", "600"]
+        args: 
+        - "--cpu"
+        - "1"
+        - "--timeout"
+        - "3600"
+        - "--vm"
+        - "1"
+        - "--vm-bytes"
+        - "64M"
+        - "--vm-stride"  # Added memory stride for varied memory access patterns
+        - "128"
+        - "--hdd"       # Added disk stress
+        - "1"
+        - "--hdd-bytes"
+        - "128M"

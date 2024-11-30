@@ -1,0 +1,118 @@
+---
+# Create clusters with Terraform
+- name: Create AWS clusters
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-eks"
+    state: present
+    force_init: true
+    complex_vars: true
+    variables:
+      tag_uuid: "{{ tag_uuid }}"
+      aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+      aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+      flavour: "m5.large"
+      kube_version: "1.29"
+      worker_count: 1
+      worker_pool_count: 3
+  environment: 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+  async: 7200
+  poll: 0
+  register: terraform_create_cluster_eks
+  when: cloud_provider == 'eks'
+
+- name: Create IBM clusters
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-iks"
+    state: present
+    force_init: true
+    complex_vars: true
+    variables:
+      flavour: "bx2.2x8"
+      ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
+      kube_version: "1.29.10"
+      resource_group: "{{ RESOURCE_GROUP_ID }}"
+      region: "us-south"
+      vpc_name: "kscale-workload-vpc"
+      vpc_id: "{{ VPC_ID }}"
+      worker_count: 1
+      worker_pool_count: 1
+      tag_uuid: "{{ tag_uuid }}"
+      kube_config_path: "{{ playbook_dir }}"
+      zones:
+        - name: us-south-1
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_1 }}"
+        - name: us-south-2
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_2 }}"
+        - name: us-south-3
+          subnet_id: "{{ SUBNET_ID.US_SOUTH_3 }}"
+  async: 7200
+  poll: 0
+  register: terraform_create_cluster_iks
+  when: cloud_provider == 'iks'
+
+# Wait for cluster creation
+- name: Wait for AWS cluster creation
+  ansible.builtin.async_status:
+    jid: "{{ terraform_create_cluster_eks.ansible_job_id }}"
+  register: terraform_cluster_result_eks
+  until: terraform_cluster_result_eks.finished
+  retries: 480
+  delay: 30
+  when: cloud_provider == 'eks'
+
+- name: Wait for IBM cluster creation
+  ansible.builtin.async_status:
+    jid: "{{ terraform_create_cluster_iks.ansible_job_id }}"
+  register: terraform_cluster_result_iks
+  until: terraform_cluster_result_iks.finished
+  retries: 480
+  delay: 30
+  when: cloud_provider == 'iks'
+
+# Configure cluster access
+- name: Generate kubeconfig for EKS clusters
+  command: aws eks update-kubeconfig --name {{ item }}-eks --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml
+  loop:
+    - karpenter
+    - cas
+  environment: 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+  when: cloud_provider == 'eks'
+
+- name: Find kubeconfig paths for IKS
+  find:
+    paths: "{{ playbook_dir }}/files/kubeconfig-iks-{{ item }}"
+    recurse: no
+    file_type: directory
+  loop:
+    - karpenter
+    - cas
+  register: kubeconfig_dirs
+  when: cloud_provider == 'iks'
+
+# Set kubeconfig facts
+- name: Set kubeconfig facts
+  set_fact:
+    "KUBECONFIG_{{ cloud_provider | upper }}_{{ item | upper }}": "{{ playbook_dir }}/files/kubeconfig-{{ cloud_provider }}-{{ item }}/config.yml"
+  loop:
+    - karpenter
+    - cas
+
+# Wait for nodes
+- name: Wait for cluster nodes to be ready
+  shell: |
+    kubectl get nodes --no-headers | awk '{print $2}' | grep -v 'Ready' | wc -l
+  register: nodes_not_ready
+  until: nodes_not_ready.stdout == "0"
+  retries: 20
+  delay: 30
+  loop:
+    - karpenter
+    - cas
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"

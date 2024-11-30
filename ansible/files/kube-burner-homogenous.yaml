@@ -12,9 +12,9 @@ global:
 
 jobs:
   - name: cpu-intensive
-    jobIterations: 10
-    qps: 4
-    burst: 4
+    jobIterations: 2400
+    qps: 10
+    burst: 10
     namespacedIterations: true
     namespace: cpu-intensive
     podWait: false
@@ -24,9 +24,9 @@ jobs:
       - objectTemplate: files/templates/heterogenous/deployment-cpu-m
         replicas: 28
   - name: memory-intensive
-    jobIterations: 10
-    qps: 4
-    burst: 4
+    jobIterations: 2400
+    qps: 10
+    burst: 10
     namespacedIterations: true
     namespace: memory-intensive
     podWait: false
@@ -36,9 +36,9 @@ jobs:
       - objectTemplate: files/templates/heterogenous/deployment-memory-m
         replicas: 28
   - name: network-intensive
-    jobIterations: 10
-    qps: 4
-    burst: 4
+    jobIterations: 2400
+    qps: 10
+    burst: 10
     namespacedIterations: true
     namespace: network-intensive
     podWait: false
@@ -48,9 +48,9 @@ jobs:
       - objectTemplate: files/templates/heterogenous/deployment-network-m
         replicas: 28
   - name: io-intensive
-    jobIterations: 10
-    qps: 4
-    burst: 4
+    jobIterations: 2400
+    qps: 10
+    burst: 10
     namespacedIterations: true
     namespace: io-intensive
     podWait: false

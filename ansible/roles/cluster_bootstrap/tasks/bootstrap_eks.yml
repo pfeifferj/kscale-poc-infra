@@ -1,0 +1,64 @@
+---
+- name: Create clusters with Terraform
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-eks"
+    state: present
+    force_init: true
+    complex_vars: true
+    variables:
+      tag_uuid: "{{ tag_uuid }}"
+      aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+      aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+      flavour: "m5.large"
+      kube_version: "1.29"
+      worker_count: 1
+      worker_pool_count: 3
+  ignore_errors: yes 
+  async: 7200
+  poll: 0
+  register: terraform_create_cluster_eks
+  environment: 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+
+- name: Wait for terraform cluster creation to finish
+  ansible.builtin.async_status:
+    jid: "{{ terraform_create_cluster_eks.ansible_job_id }}"
+  register: terraform_cluster_result_eks
+  until: terraform_cluster_result_eks.finished
+  retries: 480   
+  delay: 30
+
+- name: Generate kubeconfig for EKS clusters
+  command: aws eks update-kubeconfig --name {{ item }}-eks --region us-east-1 --kubeconfig {{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml
+  loop:
+    - karpenter
+    - cas
+  environment: 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+
+- name: Set kubeconfig for further tasks
+  set_fact:
+    "KUBECONFIG_EKS_{{ item | upper }}": "{{ playbook_dir }}/files/kubeconfig-eks-{{ item }}/config.yml"
+  loop:
+    - karpenter
+    - cas
+
+- name: Wait for cluster nodes to be ready
+  shell: |
+    kubectl get nodes --no-headers | awk '{print $2}' | grep -v 'Ready' | wc -l
+  register: nodes_not_ready
+  until: nodes_not_ready.stdout == "0"
+  retries: 20
+  delay: 30
+  loop:
+    - karpenter
+    - cas
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_' ~ (item | upper)) }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"

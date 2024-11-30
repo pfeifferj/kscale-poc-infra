@@ -7,71 +7,38 @@ global:
   requestTimeout: 60s
   gc: true
   gcMetrics: false
-  waitWhenFinished: true
+  waitWhenFinished: false  # Changed to false to allow concurrent job execution
   clusterHealth: true
 
 jobs:
   - name: cpu-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
+    jobIterations: 50
+    qps: 40
+    burst: 50
     namespacedIterations: true
     namespace: cpu-intensive
-    podWait: true
+    podWait: false        # Changed to false to allow faster pod creation
     cleanup: true
-    waitWhenFinished: true
+    waitWhenFinished: false
     objects:
-      - objectTemplate: files/templates/heterogenous/deployment-cpu-s
-        replicas: 8
-      - objectTemplate: files/templates/heterogenous/deployment-cpu-m
-        replicas: 16
       - objectTemplate: files/templates/heterogenous/deployment-cpu-l
-        replicas: 32
+        replicas: 20      # Increased from 16
+      - objectTemplate: files/templates/heterogenous/deployment-cpu-m
+        replicas: 30      # Increased from 8
+      - objectTemplate: files/templates/heterogenous/deployment-cpu-s
+        replicas: 40      # Increased from 4
+
   - name: memory-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
+    jobIterations: 30
+    qps: 40
+    burst: 50
     namespacedIterations: true
     namespace: memory-intensive
-    podWait: true
+    podWait: false
     cleanup: true
-    waitWhenFinished: true
+    waitWhenFinished: false
     objects:
-      - objectTemplate: files/templates/heterogenous/deployment-memory-s
-        replicas: 8
       - objectTemplate: files/templates/heterogenous/deployment-memory-m
-        replicas: 16
+        replicas: 20
       - objectTemplate: files/templates/heterogenous/deployment-memory-l
-        replicas: 32
-  - name: network-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
-    namespacedIterations: true
-    namespace: network-intensive
-    podWait: true
-    cleanup: true
-    waitWhenFinished: true
-    objects:
-      - objectTemplate: files/templates/heterogenous/deployment-network-s
-        replicas: 8
-      - objectTemplate: files/templates/heterogenous/deployment-network-m
-        replicas: 16
-      - objectTemplate: files/templates/heterogenous/deployment-network-l
-        replicas: 32
-  - name: io-intensive
-    jobIterations: 5
-    qps: 10
-    burst: 10
-    namespacedIterations: true
-    namespace: io-intensive
-    podWait: true
-    cleanup: true
-    waitWhenFinished: true
-    objects:
-      - objectTemplate: files/templates/heterogenous/deployment-io-s
-        replicas: 8
-      - objectTemplate: files/templates/heterogenous/deployment-io-m
-        replicas: 16
-      - objectTemplate: files/templates/heterogenous/deployment-io-l
-        replicas: 32
+        replicas: 30

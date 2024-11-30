@@ -1,0 +1,85 @@
+---
+# Deploy port-forward service
+- name: Deploy port-forward service
+  become: true
+  vars:
+    ansible_become_password: "{{ SUDO_PASSWORD }}"
+    kubeconfig_path: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item.cluster | upper)) }}"
+  ansible.builtin.template:
+    src: port-forward@.service.j2
+    dest: /etc/systemd/system/port-forward-{{ item.cluster }}-{{ cloud_provider }}.service
+    mode: '0644'
+  loop:
+    - { cluster: 'karpenter', port: "{{ '9093' if cloud_provider == 'eks' else '9091' }}" }
+    - { cluster: 'cas', port: "{{ '9094' if cloud_provider == 'eks' else '9092' }}" }
+
+# Start port-forward services
+- name: Start port-forward services
+  become: true
+  vars:
+    ansible_become_password: "{{ SUDO_PASSWORD }}"
+  ansible.builtin.systemd:
+    name: "port-forward-{{ item }}-{{ cloud_provider }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  loop:
+    - karpenter
+    - cas
+
+# Wait for services to be ready
+- name: Wait for services to be ready
+  ansible.builtin.wait_for:
+    timeout: 30
+
+# Template metrics endpoints
+- name: Template metrics endpoints
+  ansible.builtin.template:
+    src: metrics-endpoints.yaml.j2
+    dest: "metrics-endpoints-{{ cloud_provider }}-{{ item }}.yaml"
+  vars:
+    prom_endpoint: "{{ lookup('vars', 'PROM_ENDPOINT_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
+    prom_metrics_profile_path: "metrics-aggregated.yaml"
+    prom_token: "{{ lookup('vars', 'PROM_TOKEN_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
+    env: "{{ cloud_provider }}"
+    uuid: "{{ tag_uuid }}"
+    cluster: "{{ item }}"
+  loop:
+    - karpenter
+    - cas
+
+# Fetch metrics from prometheus using experiment timestamps
+- name: Fetch metrics from prometheus
+  ansible.builtin.command:
+    cmd: "curl -s 'http://127.0.0.1:{{ item.1.port }}/api/v1/query_range?query={{ item.0.query | urlencode }}&start={{ start_time }}&end={{ end_time }}&step=30s'"
+  register: query_response
+  loop: "{{ prometheus_queries | product(cluster_list) | list }}"
+  loop_control:
+    loop_var: item
+    label: "{{ item.1.cluster }} - {{ item.0.metricName }}"
+  vars:
+    cluster_list:
+      - { cluster: 'karpenter', port: "{{ '9093' if cloud_provider == 'eks' else '9091' }}" }
+      - { cluster: 'cas', port: "{{ '9094' if cloud_provider == 'eks' else '9092' }}" }
+
+# Save metrics to files in workload scenario subdirs
+- name: Save metrics to files
+  copy:
+    content: "{{ item.stdout }}"
+    dest: "{{ playbook_dir }}/experiment-data/{{ cloud_provider }}/{{ item.item.1.cluster }}/{{ workload_scenario }}/{{ item.item.0.metricName }}.json"
+  loop: "{{ query_response.results }}"
+  loop_control:
+    label: "{{ item.item.1.cluster }} - {{ item.item.0.metricName }}"
+
+# Stop port-forward services
+- name: Stop port-forward services
+  become: true
+  vars:
+    ansible_become_password: "{{ SUDO_PASSWORD }}"
+  ansible.builtin.systemd:
+    name: "port-forward-{{ item }}-{{ cloud_provider }}"
+    state: stopped
+    enabled: false
+  loop:
+    - karpenter
+    - cas

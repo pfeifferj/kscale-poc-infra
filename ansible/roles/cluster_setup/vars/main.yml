@@ -1,0 +1,25 @@
+---
+# Provider-specific variables
+provider_vars:
+  eks:
+    autoscaler_repo: "https://kubernetes.github.io/autoscaler"
+    autoscaler_chart: "autoscaler_eks/cluster-autoscaler"
+    cluster_name: "cas-eks"
+    prometheus_ports:
+      karpenter: 9093
+      cas: 9094
+    env_vars:
+      AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+      AWS_DEFAULT_REGION: "us-east-1"
+  
+  iks:
+    autoscaler_repo: "https://icr.io/helm/iks-charts"
+    autoscaler_chart: "iks-charts/ibm-iks-cluster-autoscaler"
+    cluster_name: "cas-iks"
+    prometheus_ports:
+      karpenter: 9091
+      cas: 9092
+    karpenter_repo: "https://pfeifferj.github.io/karpenter-provider-ibm-cloud"
+    karpenter_chart: "karpenter-provider-ibm/karpenter"
+    karpenter_version: "0.35.0"

@@ -1,0 +1,138 @@
+---
+# Set start timestamp before deploying workloads
+- name: Set experiment start time
+  set_fact:
+    experiment_start_time: "{{ lookup('pipe', 'date --utc +%Y-%m-%dT%H:%M:%SZ') }}"
+
+# Deploy homogeneous workload scenario
+- name: Deploy homogeneous workload
+  block:
+    - name: Create namespace for homogeneous workload
+      kubernetes.core.k8s:
+        name: "{{ homogeneous_workload.namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy homogeneous workload
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: homogeneous-workload
+            namespace: "{{ homogeneous_workload.namespace }}"
+          spec:
+            replicas: 40
+            selector:
+              matchLabels:
+                app: homogeneous-workload
+            template:
+              metadata:
+                labels:
+                  app: homogeneous-workload
+              spec:
+                containers:
+                - name: workload-container
+                  image: "{{ homogeneous_workload.container.image }}"
+                  resources:
+                    requests:
+                      cpu: "{{ homogeneous_workload.container.resources.cpu }}"
+                      memory: "{{ homogeneous_workload.container.resources.memory_request }}"
+                    limits:
+                      cpu: "{{ homogeneous_workload.container.resources.cpu }}"
+                      memory: "{{ homogeneous_workload.container.resources.memory_limit }}"
+                  command: ["stress"]
+                  args: "{{ homogeneous_workload.container.args }}"
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}"
+  when: workload_scenario == 'homogeneous'
+
+# Deploy heterogeneous workload scenario
+- name: Deploy heterogeneous workload
+  block:
+    - name: Create namespace for heterogeneous workload
+      kubernetes.core.k8s:
+        name: "{{ heterogeneous_workload.namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy CPU intensive workloads
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "cpu-intensive-{{ item.size }}"
+            namespace: "{{ heterogeneous_workload.namespace }}"
+          spec:
+            replicas: 40
+            selector:
+              matchLabels:
+                app: "cpu-intensive-{{ item.size }}"
+            template:
+              metadata:
+                labels:
+                  app: "cpu-intensive-{{ item.size }}"
+              spec:
+                containers:
+                - name: cpu-intensive-container
+                  image: quay.io/kako1/stress:22
+                  resources:
+                    requests:
+                      cpu: "{{ item.cpu }}"
+                      memory: "{{ item.memory_request }}"
+                    limits:
+                      cpu: "{{ item.cpu }}"
+                      memory: "{{ item.memory_limit }}"
+                  command: ["stress"]
+                  args: "{{ item.args }}"
+      loop: "{{ heterogeneous_workload.cpu_intensive }}"
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}"
+  when: workload_scenario == 'heterogeneous'
+
+# Wait for workloads to stabilize
+- name: Wait for workloads to stabilize
+  ansible.builtin.wait_for:
+    timeout: 600
+
+# Set end timestamp after workload stabilization
+- name: Set experiment end time
+  set_fact:
+    experiment_end_time: "{{ lookup('pipe', 'date --utc +%Y-%m-%dT%H:%M:%SZ') }}"
+
+- name: Create output directories
+  file:
+    path: "{{ playbook_dir }}/experiment-data/{{ cloud_provider }}/{{ item }}/{{ workload_scenario }}"
+    state: directory
+  loop:
+    - karpenter
+    - cas
+
+# Collect billing metrics
+- name: Collect billing metrics
+  block:
+    - name: Retrieve AWS billing data
+      ansible.builtin.command:
+        cmd: python3 files/scripts/fetch_billing_data_aws.py --tag_key 'tag' --tag_value '{{ item }}-{{ tag_uuid }}' --access_key '{{ AWS_ACCESS_KEY_ID }}' --secret_key '{{ AWS_SECRET_ACCESS_KEY }}' --output_file '{{ playbook_dir }}/experiment-data/{{ cloud_provider }}/{{ item }}/{{ workload_scenario }}/aws_billing_metrics_{{ item }}.json'
+      loop:
+        - karpenter
+        - cas
+      when: cloud_provider == 'eks'
+
+    - name: Retrieve IBM billing data
+      ansible.builtin.command:
+        cmd: python3 files/scripts/fetch_billing_data_ibm.py --tag_value '{{ item }}-{{ tag_uuid }}' --api_key '{{ IBM_CLOUD_TOKEN }}' --output_file '{{ playbook_dir }}/experiment-data/{{ cloud_provider }}/{{ item }}/{{ workload_scenario }}/ibm_billing_metrics_{{ item }}.json' --account_id '{{ IBM_CLOUD_ACCOUT_ID }}'
+      loop:
+        - karpenter
+        - cas
+      when: cloud_provider == 'iks'
+
+# Collect prometheus metrics
+- name: Collect prometheus metrics
+  include_tasks: collect_metrics.yml
+  vars:
+    start_time: "{{ experiment_start_time }}"
+    end_time: "{{ experiment_end_time }}"

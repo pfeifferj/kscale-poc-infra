@@ -3,28 +3,18 @@
   connection: local
   vars_files:
     - secrets.yaml
-  gather_facts: yes
+  gather_facts: true
   vars:
     clusters:
       - karpenter
       - cas
     load_test_targets: "{{ lookup('env', 'LOAD_TEST_TARGET') | default('') | split(',') }}"
 
-  tasks:
+  pre_tasks:
     - name: Set fact for IBM and AWS tasks based on env
       set_fact:
         run_iks: "{{ 'IBM_CLOUD' in load_test_targets }}"
         run_eks: "{{ 'AWS' in load_test_targets }}"
-      tags:
-        - billing
-        - setup
-        - config 
-        - benchmark 
-        - teardown
-
-    - name: Debug load_test_targets
-      debug:
-        var: load_test_targets
       tags:
         - billing
         - setup
@@ -52,82 +42,52 @@
         - benchmark 
         - teardown
 
-    - name: Cleanup artefacts from previous runs
-      import_tasks: tasks/cleanup.yaml
-      when: run_iks
-      tags:
-        - setup
-      vars:
-        ansible_become_password: "{{ SUDO_PASSWORD }}"
+  tasks:
+    - name: Run experiment with automatic cleanup on failure
+      block:
+        - name: Bootstrap clusters
+          include_role:
+            name: cluster_bootstrap
+          when: run_iks or run_eks
+          vars:
+            cloud_provider: "{{ 'iks' if run_iks else 'eks' }}"
+          tags: 
+            - setup
 
-    - name: Launch IBM Cloud bootstrap task if enabled
-      import_tasks: tasks/iks/clusterbootstrap-iks.yaml
-      when: run_iks
-      tags:
-        - setup
-      register: iks_bootstrap
+        - name: Setup clusters
+          include_role:
+            name: cluster_setup
+          when: run_iks or run_eks
+          vars:
+            cloud_provider: "{{ 'iks' if run_iks else 'eks' }}"
+          tags: 
+            - config
 
-    - name: Launch AWS bootstrap task if enabled
-      import_tasks: tasks/eks/clusterbootstrap-eks.yaml
-      when: run_eks
-      tags:
-        - setup
-      register: eks_bootstrap
+        - name: Run benchmarks
+          include_role:
+            name: benchmarking
+          when: run_iks or run_eks
+          vars:
+            cloud_provider: "{{ 'iks' if run_iks else 'eks' }}"
+            workload_scenario: "{{ lookup('env', 'WORKLOAD_SCENARIO') | default('homogeneous') }}"
+          tags:
+            - benchmark
+            - billing
 
-    - name: Configure IKS Clusters
-      import_tasks: tasks/iks/clusterconfig-iks.yaml
-      ignore_errors: true
-      when: run_iks
-      tags:
-        - config
+      rescue:
+        - name: Cleanup on failure
+          include_role:
+            name: cluster_teardown
+          when: run_iks or run_eks
+          vars:
+            cloud_provider: "{{ 'iks' if run_iks else 'eks' }}"
 
-    - name: Configure EKS Clusters
-      import_tasks: tasks/eks/clusterconfig-eks.yaml
-      ignore_errors: true
-      when: run_eks
-      tags:
-        - config
-
-    - name: IKS benchmark tasks
-      include_tasks: tasks/iks/benchmark-iks.yaml
-      when: run_iks
-      tags:
-        - benchmark
-      vars:
-        ansible_become_password: "{{ SUDO_PASSWORD }}"
-        kube_burner_version: 'V1.10.9'   
-        kube_burner_arch: 'linux-x86_64'
-
-    - name: EKS benchmark tasks
-      include_tasks: tasks/eks/benchmark-eks.yaml
-      when: run_eks
-      tags:
-        - benchmark
-      vars:
-        ansible_become_password: "{{ SUDO_PASSWORD }}"
-        kube_burner_version: 'V1.10.9'   
-        kube_burner_arch: 'linux-x86_64'
-
-    - name: Get IBM Cloud billing metrics
-      import_tasks: tasks/iks/fetch-billing-ibm.yaml
-      when: run_iks
-      tags:
-        - billing
-
-    - name: Get AWS Cloud billing metrics
-      import_tasks: tasks/eks/fetch-billing-aws.yaml
-      when: run_eks
-      tags:
-        - billing
-
-    - name: Run IBM Cloud teardown if enabled
-      include_tasks: tasks/iks/clusterteardown-iks.yaml
-      when: run_iks
-      tags:
-        - teardown
-
-    - name: Run AWS teardown if enabled
-      include_tasks: tasks/eks/clusterteardown-eks.yaml
-      when: run_eks
-      tags:
-        - teardown
+      always:
+        - name: Normal teardown
+          include_role:
+            name: cluster_teardown
+          when: run_iks or run_eks
+          vars:
+            cloud_provider: "{{ 'iks' if run_iks else 'eks' }}"
+          tags:
+            - teardown

@@ -17,10 +17,20 @@ spec:
         image: ghcr.io/vish/stress:latest
         resources:
           requests:
-            cpu: "1000m"
+            cpu: "4000m"
             memory: "512Mi"
           limits:
             cpu: "4000m"
-            memory: "10Gi"
+            memory: "1Gi"
         command: ["stress"]
-        args: ["--cpu", "4", "--timeout", "600"]
+        args: 
+        - "--cpu"
+        - "4"
+        - "--timeout"
+        - "3600"        # Increased timeout to 1 hour
+        - "--vm"        # Added memory stress
+        - "2"
+        - "--vm-bytes"
+        - "256M"
+        - "--vm-hang"
+        - "1"

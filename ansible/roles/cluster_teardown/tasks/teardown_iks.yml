@@ -1,0 +1,11 @@
+---
+- name: Login to IBM Cloud
+  ansible.builtin.command:
+    cmd: ibmcloud login --apikey {{ IBM_CLOUD_TOKEN }}
+
+- name: Remove IKS clusters
+  ansible.builtin.command:
+    cmd: ibmcloud ks cluster rm -c {{ item }}-iks -f --force-delete-storage
+  loop:
+    - karpenter
+    - cas

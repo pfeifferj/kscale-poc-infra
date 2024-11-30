@@ -1,0 +1,34 @@
+---
+# EKS-specific setup tasks
+- name: Add cluster autoscaler chart repo
+  kubernetes.core.helm_repository:
+    name: autoscaler_eks
+    repo_url: "https://kubernetes.github.io/autoscaler"
+
+- name: Deploy Cluster Autoscaler (EKS)
+  kubernetes.core.helm:
+    name: cas
+    chart_ref: autoscaler_eks/cluster-autoscaler
+    release_namespace: cas
+    create_namespace: true
+    set_values:
+      - value: "autoDiscovery.clusterName=cas-eks"
+        value_type: string
+    values:
+      workerpools:
+        - default:
+            enabled: true
+            max: 3
+            min: 1
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
+
+- name: Set Prometheus endpoint facts
+  set_fact:
+    "PROM_ENDPOINT_EKS_{{ item.cluster | upper }}": "http://127.0.0.1:{{ item.port }}"
+  loop:
+    - { cluster: 'karpenter', port: 9093 }
+    - { cluster: 'cas', port: 9094 }

@@ -1,24 +1,3 @@
-- name: Download kube-burner archive
-  become: yes
-  ansible.builtin.get_url:
-    url: "https://github.com/kube-burner/kube-burner/releases/download/v1.10.9/kube-burner-V1.10.9-linux-x86_64.tar.gz"
-    dest: "/tmp/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
-    mode: '0644'
-    force: yes
-
-- name: Unarchive kube-burner binary
-  become: yes
-  ansible.builtin.unarchive:
-    src: "/tmp/kube-burner-{{ kube_burner_version }}-{{ kube_burner_arch }}.tar.gz"
-    dest: /usr/local/bin/
-    remote_src: yes
-    mode: '0755'
-
-- name: Prepare kube-burner configuration files
-  ansible.builtin.copy:
-    src: files/kube-burner-heterogenous.yaml
-    dest: kube-burner-config.yaml
-
 - name: Copy metrics profile file
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/files/metrics-profiles/metrics-aggregated.yaml"
@@ -62,21 +41,270 @@
     - karpenter
     - cas
 
-- name: wait 10 minutes
+- name: wait 10 minutes for initial metrics collection
   ansible.builtin.wait_for:
-    timeout: 1200
+    timeout: 600
 
-- name: Run kube-burner on all clusters
-  become: yes
-  ignore_errors: yes 
-  ansible.builtin.shell: |
-    /usr/local/bin/kube-burner init -c kube-burner-config.yaml -e metrics-endpoints-iks-{{ item }}.yaml --uuid {{ tag_uuid }}-iks-{{ item }} --timeout 1h
-  register: benchmark_run_iks
+# Homogeneous workload tasks for karpenter cluster
+# - name: Create namespace for homogeneous workload on karpenter
+#   kubernetes.core.k8s:
+#     name: homogeneous-workload
+#     api_version: v1
+#     kind: Namespace
+#     state: present
+#   environment:
+#     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
+
+# - name: Deploy homogeneous workload using medium CPU template on karpenter
+#   kubernetes.core.k8s:
+#     definition:
+#       apiVersion: apps/v1
+#       kind: Deployment
+#       metadata:
+#         name: homogeneous-workload
+#         namespace: homogeneous-workload
+#       spec:
+#         replicas: 40
+#         selector:
+#           matchLabels:
+#             app: homogeneous-workload
+#         template:
+#           metadata:
+#             labels:
+#               app: homogeneous-workload
+#           spec:
+#             containers:
+#             - name: cpu-intensive-container
+#               image: quay.io/kako1/stress:22
+#               resources:
+#                 requests:
+#                   cpu: "2000m"
+#                   memory: "256Mi"
+#                 limits:
+#                   cpu: "2000m"
+#                   memory: "512Mi"
+#               command: ["stress"]
+#               args: ["--cpu", "2", "--timeout", "3600", "--vm", "1", "--vm-bytes", "128M", "--io", "2"]
+#     state: present
+#   environment:
+#     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
+
+# Heterogeneous workload tasks for cas cluster
+- name: Create namespace for heterogeneous workload on cas
+  kubernetes.core.k8s:
+    name: heterogeneous-workload
+    api_version: v1
+    kind: Namespace
+    state: present
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
-  loop: 
-    - karpenter
-    - cas
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+# Apply CPU intensive deployments
+- name: Apply CPU intensive deployments on cas
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "cpu-intensive-{{ item.size }}"
+        namespace: heterogeneous-workload
+      spec:
+        replicas: 40
+        selector:
+          matchLabels:
+            app: "cpu-intensive-{{ item.size }}"
+        template:
+          metadata:
+            labels:
+              app: "cpu-intensive-{{ item.size }}"
+          spec:
+            containers:
+            - name: cpu-intensive-container
+              image: quay.io/kako1/stress:22
+              resources:
+                requests:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_request }}"
+                limits:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_limit }}"
+              command: ["stress"]
+              args: "{{ item.args }}"
+    state: present
+  loop:
+    - { size: 'large', replicas: 20, cpu: '4000m', memory_request: '512Mi', memory_limit: '1Gi', args: ['--cpu', '4', '--timeout', '3600', '--vm', '2', '--vm-bytes', '256M', '--vm-hang', '1'] }
+    - { size: 'medium', replicas: 30, cpu: '2000m', memory_request: '256Mi', memory_limit: '512Mi', args: ['--cpu', '2', '--timeout', '3600', '--vm', '1', '--vm-bytes', '128M', '--io', '2'] }
+    - { size: 'small', replicas: 40, cpu: '1000m', memory_request: '128Mi', memory_limit: '256Mi', args: ['--cpu', '1', '--timeout', '3600', '--vm', '1', '--vm-bytes', '64M', '--vm-stride', '128', '--hdd', '1', '--hdd-bytes', '128M'] }
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+# Apply Memory intensive jobs
+- name: Apply Memory intensive jobs on cas
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: "memory-heavy-{{ item.size }}"
+        namespace: heterogeneous-workload
+      spec:
+        template:
+          spec:
+            containers:
+            - name: memory-heavy-container
+              image: quay.io/kako1/stress:22
+              resources:
+                requests:
+                  memory: "{{ item.request }}"
+                limits:
+                  memory: "{{ item.limit }}"
+              command: ["stress"]
+              args: ["--vm", "2", "--vm-bytes", "{{ item.bytes }}", "--timeout", "600"]
+            restartPolicy: Never
+        backoffLimit: 4
+    state: present
+  loop:
+    - { size: 'large', request: '2Gi', limit: '32Gi', bytes: '32G' }
+    - { size: 'medium', request: '2Gi', limit: '16Gi', bytes: '16G' }
+    - { size: 'small', request: '2Gi', limit: '4Gi', bytes: '4G' }
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+# Apply IO intensive deployments
+- name: Apply IO intensive deployments on cas
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "io-intensive-{{ item.size }}"
+        namespace: heterogeneous-workload
+      spec:
+        replicas: 40
+        selector:
+          matchLabels:
+            app: "io-intensive-{{ item.size }}"
+        template:
+          metadata:
+            labels:
+              app: "io-intensive-{{ item.size }}"
+          spec:
+            containers:
+            - name: io-bound-container
+              image: busybox:latest
+              resources:
+                requests:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_request }}"
+                limits:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_limit }}"
+              volumeMounts:
+              - name: test-volume
+                mountPath: /data
+              command: ["/bin/sh"]
+              args: ["-c", "dd if=/dev/zero of=/data/testfile bs=1M count=1024 && sleep 600"]
+            volumes:
+            - name: test-volume
+              emptyDir: {}
+    state: present
+  loop:
+    - { size: 'large', replicas: 20, cpu: '2000m', memory_request: '512Mi', memory_limit: '1Gi' }
+    - { size: 'medium', replicas: 30, cpu: '1000m', memory_request: '256Mi', memory_limit: '512Mi' }
+    - { size: 'small', replicas: 40, cpu: '500m', memory_request: '128Mi', memory_limit: '256Mi' }
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+# Deploy iperf server for network tests
+- name: Deploy iperf server on cas
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: iperf-server
+        namespace: heterogeneous-workload
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: iperf-server
+        template:
+          metadata:
+            labels:
+              app: iperf-server
+          spec:
+            containers:
+            - name: iperf-server
+              image: networkstatic/iperf3:latest
+              command: ["iperf3"]
+              args: ["-s"]
+              ports:
+              - containerPort: 5201
+    state: present
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+- name: Create iperf server service on cas
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: iperf-server
+        namespace: heterogeneous-workload
+      spec:
+        selector:
+          app: iperf-server
+        ports:
+        - port: 5201
+          targetPort: 5201
+    state: present
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+# Apply Network intensive deployments
+- name: Apply Network intensive deployments on cas
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "network-intensive-{{ item.size }}"
+        namespace: heterogeneous-workload
+      spec:
+        replicas: 40
+        selector:
+          matchLabels:
+            app: "network-intensive-{{ item.size }}"
+        template:
+          metadata:
+            labels:
+              app: "network-intensive-{{ item.size }}"
+          spec:
+            containers:
+            - name: network-intensive-container
+              image: networkstatic/iperf3:latest
+              resources:
+                requests:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_request }}"
+                limits:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_limit }}"
+              command: ["iperf3"]
+              args: ["-c", "iperf-server", "-t", "600"]
+    state: present
+  loop:
+    - { size: 'large', replicas: 20, cpu: '1000m', memory_request: '256Mi', memory_limit: '512Mi' }
+    - { size: 'medium', replicas: 30, cpu: '500m', memory_request: '128Mi', memory_limit: '256Mi' }
+    - { size: 'small', replicas: 40, cpu: '250m', memory_request: '64Mi', memory_limit: '128Mi' }
+  environment:
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+
+- name: wait 10 minutes for workloads to stabilize
+  ansible.builtin.wait_for:
+    timeout: 600
 
 - name: ensure jq is installed
   ansible.builtin.package:
@@ -85,7 +313,7 @@
 
 - name: create output directories
   file:
-    path: "{{ playbook_dir }}/experiment-data/{{ item.cluster }}"
+    path: "{{ playbook_dir }}/experiment-data/iks/{{ item.cluster }}"
     state: directory
   loop:
     - { cluster: 'karpenter', port: 9095 }
@@ -194,7 +422,7 @@
 - name: save range query results to json files
   copy:
     content: "{{ item.stdout }}"
-    dest: "{{ playbook_dir }}/experiment-data/{{ item.item.1.cluster }}/{{ item.item.0.metricName }}.json"
+    dest: "{{ playbook_dir }}/experiment-data/iks/{{ item.item.1.cluster }}/{{ item.item.0.metricName }}.json"
   loop: "{{ range_query_response.results }}"
   loop_control:
     label: "{{ item.item.1.cluster }} - {{ item.item.0.metricName }}"

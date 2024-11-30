@@ -1,0 +1,32 @@
+---
+# Provider-specific teardown tasks
+- name: Teardown clusters
+  block:
+    - name: Destroy EKS clusters with Terraform
+      community.general.terraform:
+        project_path: "{{ playbook_dir }}/../terraform-eks"
+        state: absent
+        purge_workspace: true
+        complex_vars: true
+        variables:
+          tag_uuid: "{{ tag_uuid }}"
+          aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+          aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+          flavour: "m5.large"
+          kube_version: "1.29"
+          worker_count: 1
+          worker_pool_count: 3
+      when: cloud_provider == 'eks'
+
+    - name: Login to IBM Cloud
+      ansible.builtin.command:
+        cmd: ibmcloud login --apikey {{ IBM_CLOUD_TOKEN }}
+      when: cloud_provider == 'iks'
+
+    - name: Remove IKS clusters
+      ansible.builtin.command:
+        cmd: ibmcloud ks cluster rm -c {{ item }}-iks -f --force-delete-storage
+      loop:
+        - karpenter
+        - cas
+      when: cloud_provider == 'iks'

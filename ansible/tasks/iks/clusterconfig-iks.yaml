@@ -34,7 +34,7 @@
 - name: Deploy Cluster Autoscaler (IKS)
   kubernetes.core.helm:
     name: cas
-    chart_ref: autoscaler_iks/cluster-autoscaler
+    chart_ref: iks-charts/ibm-iks-cluster-autoscaler
     release_namespace: cas
     create_namespace: true
     set_values:
@@ -104,7 +104,7 @@
     name: prometheus-sa-token
   register: prometheus_sa_token
   environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}" 
+    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_' ~ (item | upper)) }}"
   loop:
     - karpenter
     - cas
