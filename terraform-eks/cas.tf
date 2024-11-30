@@ -35,3 +35,58 @@ module "eks_al2" {
     tag = "cas-${var.tag_uuid}"
   }
 }
+
+# IAM role for cluster autoscaler
+resource "aws_iam_role" "cluster_autoscaler" {
+  name = "cas-eks-cluster-autoscaler"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = module.eks_al2.oidc_provider_arn
+        }
+        Condition = {
+          StringEquals = {
+            "${module.eks_al2.oidc_provider}:sub" = "system:serviceaccount:cas:aws-cluster-autoscaler"
+            "${module.eks_al2.oidc_provider}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# IAM policy for cluster autoscaler
+resource "aws_iam_role_policy" "cluster_autoscaler" {
+  name = "cas-eks-cluster-autoscaler"
+  role = aws_iam_role.cluster_autoscaler.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances",
+          "autoscaling:DescribeLaunchConfigurations",
+          "autoscaling:DescribeTags",
+          "autoscaling:SetDesiredCapacity",
+          "autoscaling:TerminateInstanceInAutoScalingGroup",
+          "ec2:DescribeLaunchTemplateVersions"
+        ]
+        Resource = ["*"]
+      }
+    ]
+  })
+}
+
+# Output the IAM role ARN for use in Helm chart
+output "cluster_autoscaler_role_arn" {
+  description = "ARN of the IAM role for cluster autoscaler"
+  value       = aws_iam_role.cluster_autoscaler.arn
+}

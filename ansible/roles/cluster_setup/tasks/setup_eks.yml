@@ -11,15 +11,22 @@
     chart_ref: autoscaler_eks/cluster-autoscaler
     release_namespace: cas
     create_namespace: true
-    set_values:
-      - value: "autoDiscovery.clusterName=cas-eks"
-        value_type: string
     values:
-      workerpools:
-        - default:
-            enabled: true
-            max: 3
-            min: 1
+      autoDiscovery:
+        clusterName: cas-eks
+      awsRegion: us-east-1
+      rbac:
+        serviceAccount:
+          annotations:
+            eks.amazonaws.com/role-arn: "{{ terraform_cluster_result_eks.outputs.cluster_autoscaler_role_arn.value }}"
+          create: true
+          name: aws-cluster-autoscaler
+      extraArgs:
+        skip-nodes-with-local-storage: false
+        expander: least-waste
+        scale-down-enabled: true
+        scale-down-delay-after-add: 2m
+        scale-down-unneeded-time: 2m
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}" 
     AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"

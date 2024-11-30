@@ -22,6 +22,9 @@
     - cas
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
 
 # Install autoscaler based on provider
 - name: Configure autoscaler
@@ -55,6 +58,9 @@
                 min: 1
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}"
+        AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+        AWS_DEFAULT_REGION: "us-east-1"
       when: cloud_provider == 'eks'
 
     - name: Deploy Cluster Autoscaler for IKS
@@ -88,3 +94,6 @@
     - cas
   environment:
     KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_DEFAULT_REGION: "us-east-1"
