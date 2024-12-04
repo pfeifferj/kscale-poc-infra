@@ -35,27 +35,36 @@
         repo_url: "https://kubernetes.github.io/autoscaler"
       when: cloud_provider == 'eks'
 
-    - name: Add autoscaler chart repo for IKS
-      kubernetes.core.helm_repository:
-        name: autoscaler_iks
-        repo_url: "https://icr.io/helm/iks-charts"
-      when: cloud_provider == 'iks'
-
     - name: Deploy Cluster Autoscaler for EKS
       kubernetes.core.helm:
         name: cas
         chart_ref: autoscaler_eks/cluster-autoscaler
         release_namespace: cas
         create_namespace: true
-        set_values:
-          - value: "autoDiscovery.clusterName=cas-eks"
-            value_type: string
         values:
+          autoDiscovery:
+            clusterName: cas-eks
+          awsRegion: us-east-1
+          rbac:
+            create: true
+            serviceAccount:
+              create: true
+              name: aws-cluster-autoscaler
+          extraArgs:
+            skip-nodes-with-local-storage: false
+            expander: least-waste
+            scale-down-enabled: true
+            scale-down-delay-after-add: 2m
+            scale-down-unneeded-time: 2m
           workerpools:
             - default:
                 enabled: true
                 max: 3
                 min: 1
+        set_values:
+          - value: "{{ terraform_cluster_result_eks.outputs['cluster_autoscaler_role_arn'] }}"
+            value_type: string
+            key: "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_EKS_CAS') }}"
         AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
@@ -63,23 +72,117 @@
         AWS_DEFAULT_REGION: "us-east-1"
       when: cloud_provider == 'eks'
 
-    - name: Deploy Cluster Autoscaler for IKS
-      kubernetes.core.helm:
-        name: cas
-        chart_ref: iks-charts/ibm-iks-cluster-autoscaler
-        release_namespace: cas
-        create_namespace: true
-        set_values:
-          - value: "'autoDiscovery.clusterName'=cas-iks"
-            value_type: string
-        values:
-          workerpools:
-            - default:
-                enabled: true
-                max: 9
-                min: 1
+    - name: Login to IBM Cloud
+      ansible.builtin.command:
+        cmd: ibmcloud login --apikey {{ IBM_CLOUD_TOKEN }}
+      when: cloud_provider == 'iks'
+
+    - name: Target IBM Cloud resource group
+      ansible.builtin.command:
+        cmd: ibmcloud target -g kscale-workload
+      when: cloud_provider == 'iks'
+
+    - name: Enable Cluster Autoscaler addon for IKS
+      command: ibmcloud ks cluster addon enable cluster-autoscaler --cluster cas-iks
+      register: enable_autoscaler
+      when: cloud_provider == 'iks'
+
+    - name: Wait for Cluster Autoscaler addon to be ready
+      command: ibmcloud ks cluster addon ls --cluster cas-iks
+      register: addon_status
+      until: addon_status.stdout is search("cluster-autoscaler.*normal.*Addon Ready")
+      retries: 60
+      delay: 30
+      when: cloud_provider == 'iks'
+
+    - name: Configure worker pool autoscaling for IKS
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: iks-ca-configmap
+            namespace: kube-system
+          data:
+            workerPoolsConfig.json: |
+              [
+                {
+                  "name": "default",
+                  "minSize": 1,
+                  "maxSize": 3,
+                  "enabled": true
+                }
+              ]
+            expander: "least-waste"
+            scaleDownEnabled: "true"
+            scaleDownUnneededTime: "10m"
+            scaleDownDelayAfterAdd: "10m"
+            maxNodeProvisionTime: "120m"
+            skipNodesWithSystemPods: "true"
+            scanInterval: "1m"
+            maxBulkSoftTaintCount: "1"
+            maxNodeGroupBinpackingDuration: "10s"
+            scaleDownUtilizationThreshold: "0.5"
+            maxTotalUnreadyPercentage: "45"
+            okTotalUnreadyCount: "3"
+            maxEmptyBulkDelete: "10"
+            prometheusScrape: "true"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+      when: cloud_provider == 'iks'
+
+    # Verify worker pool has required label
+    - name: Check worker pool label
+      kubernetes.core.k8s_info:
+        kind: Node
+        label_selectors:
+          - "ibm-cloud.kubernetes.io/worker-pool-id"
+      register: labeled_nodes
+      environment:
+        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+      when: cloud_provider == 'iks'
+
+    - name: Restart cluster autoscaler pod if needed
+      kubernetes.core.k8s:
+        kind: Pod
+        namespace: kube-system
+        label_selectors:
+          - "app=ibm-iks-cluster-autoscaler"
+        state: absent
+      when: 
+        - cloud_provider == 'iks'
+        - labeled_nodes.resources | length > 0
+
+# Install Karpenter based on provider
+- name: Configure Karpenter
+  block:
+    - name: Add Karpenter chart repo for IKS
+      kubernetes.core.helm_repository:
+        name: pfeifferj
+        repo_url: "https://pfeifferj.github.io/karpenter-provider-ibm-cloud"
+      when: cloud_provider == 'iks'
+
+    - name: Deploy Karpenter Autoscaler for IKS
+      kubernetes.core.helm:
+        name: karpenter
+        chart_ref: pfeifferj/karpenter
+        chart_version: "0.35.0"
+        release_namespace: karpenter
+        create_namespace: true
+        values:
+          credentials:
+            ibmApiKey: "{{ IBM_CLOUD_TOKEN }}"
+            vpcApiKey: "{{ IBM_VPC_API_KEY }}"
+            region: "us-south"
+            globalCatalogApiKey: "{{ IBM_CATALOG_API_KEY }}"
+          image:
+            repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud/controller
+            tag: latest
+            pullPolicy: IfNotPresent
+            digest: "sha256:170b654c19f2fbed435df5ea1a1ec937efdcd773ce4e6a6ed98e7adec29daf5c"
+      environment:
+        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
       when: cloud_provider == 'iks'
 
 # Create service account for metrics access

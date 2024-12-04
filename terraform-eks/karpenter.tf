@@ -55,7 +55,7 @@ module "eks" {
   # Gives Terraform identity admin access to cluster which will
   # allow deploying resources (Karpenter) into the cluster
   enable_cluster_creator_admin_permissions = true
-  cluster_endpoint_public_access          = true
+  cluster_endpoint_public_access           = true
 
   cluster_addons = {
     coredns                = {}
@@ -65,7 +65,7 @@ module "eks" {
   }
 
   vpc_id                   = module.vpc.vpc_id
-  subnet_ids              = module.vpc.private_subnets
+  subnet_ids               = module.vpc.private_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
   eks_managed_node_groups = {
@@ -90,6 +90,26 @@ module "eks" {
 # Karpenter
 ################################################################################
 
+# Additional IAM policy for service-linked role creation
+resource "aws_iam_policy" "karpenter_service_linked_role" {
+  name = "KarpenterServiceLinkedRole"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "iam:CreateServiceLinkedRole"
+        Resource = "arn:aws:iam::*:role/aws-service-role/spot.amazonaws.com/*"
+        Condition = {
+          StringLike = {
+            "iam:AWSServiceName" : "spot.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
 module "karpenter" {
   source = "terraform-aws-modules/eks/aws//modules/karpenter"
 
@@ -103,6 +123,7 @@ module "karpenter" {
   # Used to attach additional IAM policies to the Karpenter node IAM role
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    KarpenterServiceLinkedRole   = aws_iam_policy.karpenter_service_linked_role.arn
   }
 
   tags = local.tags
@@ -120,15 +141,15 @@ module "karpenter_disabled" {
 
 resource "helm_release" "karpenter" {
   namespace           = "kube-system"
-  name               = "karpenter"
-  repository         = "oci://public.ecr.aws/karpenter"
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
-  chart              = "karpenter"
-  version            = "1.0.0"
-  wait               = true
-  wait_for_jobs      = true
-  timeout            = 900
+  chart               = "karpenter"
+  version             = "1.0.0"
+  wait                = true
+  wait_for_jobs       = true
+  timeout             = 900
 
   values = [
     <<-EOT

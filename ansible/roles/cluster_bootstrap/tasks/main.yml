@@ -1,4 +1,26 @@
 ---
+# Clean up old kubeconfig directories
+- name: Delete all files in kubeconfig directories
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/files/{{ item }}"
+    state: absent
+  loop:
+    - kubeconfig-iks-cas
+    - kubeconfig-iks-karpenter
+    - kubeconfig-eks-cas
+    - kubeconfig-eks-karpenter
+
+- name: Recreate kubeconfig directories
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/files/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - kubeconfig-iks-cas
+    - kubeconfig-iks-karpenter
+    - kubeconfig-eks-cas
+    - kubeconfig-eks-karpenter
+
 # Define variables first
 - name: Set role variables
   set_fact:
@@ -31,7 +53,7 @@
       tag_uuid: "{{ tag_uuid }}"
       ibmcloud_api_key: "{{ IBM_CLOUD_TOKEN }}"
       flavour: "bx2.2x8"
-      kube_version: "1.29.10"
+      kube_version: "1.29.11"
       worker_count: 1
       worker_pool_count: 1
       resource_group: "{{ RESOURCE_GROUP_ID }}"
@@ -50,9 +72,37 @@
     complex_vars: true
     variables: "{{ terraform_vars }}"
   environment: "{{ cloud_provider_env }}"
+  async: 7200  # Allow up to 2 hour for cluster creation
+  poll: 0  # Don't wait for completion
   register: terraform_create_cluster
 
-# Ensure kubeconfig directories exist
+- name: Wait for terraform cluster creation
+  async_status:
+    jid: "{{ terraform_create_cluster.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 720  # Check for 2 hour (720 * 10 seconds)
+  delay: 10  # Check every 10 seconds
+
+# Register Terraform outputs
+- name: Get Terraform outputs
+  community.general.terraform:
+    project_path: "{{ playbook_dir }}/../terraform-{{ cloud_provider }}"
+    state: present
+    force_init: false
+    variables: "{{ terraform_vars }}"  # Pass the same variables used during creation
+  environment: "{{ cloud_provider_env }}"
+  register: terraform_output_result
+  when: cloud_provider == 'eks'
+
+# Set persistent fact for Terraform outputs
+- name: Set terraform cluster result fact
+  set_fact:
+    terraform_cluster_result_eks: "{{ terraform_output_result }}"
+    cacheable: yes
+  when: cloud_provider == 'eks'
+
+# Ensure kubeconfig directories exist (only for EKS)
 - name: Create kubeconfig directories
   file:
     path: "{{ playbook_dir }}/files/kubeconfig-{{ cloud_provider }}-{{ item }}"
@@ -62,24 +112,48 @@
     - karpenter
     - cas
 
-# Configure cluster access
-- name: Generate kubeconfig for clusters
+# Configure cluster access (only for EKS)
+- name: Generate kubeconfig for EKS clusters
   command: >
-    {{ 'aws eks update-kubeconfig' if cloud_provider == 'eks' else 'ibmcloud ks cluster config' }}
-    {{ '--name ' + item + '-eks --region us-east-1' if cloud_provider == 'eks' else '--cluster ' + item }}
+    aws eks update-kubeconfig
+    --name {{ item }}-eks
+    --region us-east-1
     --kubeconfig {{ playbook_dir }}/files/kubeconfig-{{ cloud_provider }}-{{ item }}/config.yml
   loop:
     - karpenter
     - cas
   environment: "{{ cloud_provider_env }}"
+  when: cloud_provider == 'eks'
 
-# Set kubeconfig facts
-- name: Set kubeconfig facts
+# Handle IKS kubeconfig (only for IKS)
+- name: Find IKS kubeconfig paths
+  find:
+    paths: "{{ playbook_dir }}/files/kubeconfig-iks-{{ item }}"
+    patterns: "config.yml"
+    recurse: yes
+    file_type: file
+  loop:
+    - karpenter
+    - cas
+  register: iks_kubeconfig_files
+  when: cloud_provider == 'iks'
+
+- name: Set IKS kubeconfig facts
+  set_fact:
+    "KUBECONFIG_IKS_{{ item.item | upper }}": "{{ (item.files | sort(attribute='mtime', reverse=true))[0].path }}"
+  loop: "{{ iks_kubeconfig_files.results }}"
+  when: 
+    - cloud_provider == 'iks'
+    - item.matched > 0
+
+# Set kubeconfig facts for EKS
+- name: Set kubeconfig facts for EKS
   set_fact:
     "KUBECONFIG_{{ cloud_provider | upper }}_{{ item | upper }}": "{{ playbook_dir }}/files/kubeconfig-{{ cloud_provider }}-{{ item }}/config.yml"
   loop:
     - karpenter
     - cas
+  when: cloud_provider == 'eks'
 
 # Verify cluster access
 - name: Wait for cluster API access
@@ -106,8 +180,12 @@
   loop:
     - karpenter
     - cas
-  environment:
-    KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
-    AWS_ACCESS_KEY_ID: "{{ cloud_provider_env.AWS_ACCESS_KEY_ID }}"
-    AWS_SECRET_ACCESS_KEY: "{{ cloud_provider_env.AWS_SECRET_ACCESS_KEY }}"
-    AWS_DEFAULT_REGION: "{{ cloud_provider_env.AWS_DEFAULT_REGION }}"
+  environment: "{{ eks_env if cloud_provider == 'eks' else iks_env }}"
+  vars:
+    eks_env:
+      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"
+      AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+      AWS_DEFAULT_REGION: "us-east-1"
+    iks_env:
+      KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ (item | upper)) }}"

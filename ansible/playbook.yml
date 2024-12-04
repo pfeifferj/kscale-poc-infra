@@ -9,6 +9,7 @@
       - karpenter
       - cas
     load_test_targets: "{{ lookup('env', 'LOAD_TEST_TARGET') | default('') | split(',') }}"
+    cleanup_executed: false
 
   pre_tasks:
     - name: Set fact for IBM and AWS tasks based on env
@@ -75,6 +76,10 @@
             - billing
 
       rescue:
+        - name: Set cleanup executed flag
+          set_fact:
+            cleanup_executed: true
+
         - name: Cleanup on failure
           include_role:
             name: cluster_teardown
@@ -86,7 +91,7 @@
         - name: Normal teardown
           include_role:
             name: cluster_teardown
-          when: run_iks or run_eks
+          when: (run_iks or run_eks) and not cleanup_executed
           vars:
             cloud_provider: "{{ 'iks' if run_iks else 'eks' }}"
           tags:

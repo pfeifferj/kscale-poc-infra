@@ -1,0 +1,49 @@
+---
+- name: Target correct resource group for debugging
+  command: ibmcloud target -g kscale-workload
+  when: cloud_provider == 'iks'
+  ignore_errors: true
+
+- name: Debug - Get all pods across namespaces (Karpenter)
+  command: kubectl get po -A --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+  environment: "{{ cloud_provider_env }}"
+  register: all_pods_karpenter
+  ignore_errors: true
+
+- name: Debug - Get all pods across namespaces (CAS)
+  command: kubectl get po -A --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
+  environment: "{{ cloud_provider_env }}"
+  register: all_pods_cas
+  ignore_errors: true
+
+- name: Debug - Get Karpenter controller logs
+  command: >-
+    kubectl logs 
+    -n {{ 'karpenter' if cloud_provider == 'iks' else 'karpenter' }}
+    -l {{ 'app.kubernetes.io/name=karpenter' if cloud_provider == 'iks' else 'app.kubernetes.io/name=karpenter' }}
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+  environment: "{{ cloud_provider_env }}"
+  register: karpenter_logs
+  ignore_errors: true
+
+- name: Debug - Get CAS controller logs
+  command: >-
+    kubectl logs 
+    -n {{ 'kube-system' if cloud_provider == 'iks' else 'cluster-autoscaler' }}
+    -l {{ 'app=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
+  environment: "{{ cloud_provider_env }}"
+  register: cas_logs
+  ignore_errors: true
+
+- name: Display debug information
+  debug:
+    msg: 
+      - "Karpenter Pods Status:"
+      - "{{ all_pods_karpenter.stdout | default('Failed to get pods') }}"
+      - "CAS Pods Status:"
+      - "{{ all_pods_cas.stdout | default('Failed to get pods') }}"
+      - "Karpenter Logs:"
+      - "{{ karpenter_logs.stdout | default('Failed to get logs') }}"
+      - "CAS Logs:"
+      - "{{ cas_logs.stdout | default('Failed to get logs') }}"

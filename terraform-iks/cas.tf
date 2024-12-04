@@ -21,7 +21,7 @@ resource "ibm_container_vpc_cluster" "cas_cluster" {
   }
 }
 
-resource "ibm_container_vpc_worker_pool" "cas_pool" {
+/* resource "ibm_container_vpc_worker_pool" "cas_pool" {
   cluster          = ibm_container_vpc_cluster.cas_cluster.name
   worker_pool_name = "${ibm_container_vpc_cluster.cas_cluster.name}_vpc_pool"
   flavor           = var.flavour
@@ -40,7 +40,7 @@ resource "ibm_container_vpc_worker_pool" "cas_pool" {
     create = "150m"
     delete = "30m"
   }
-}
+} */
 
 data "ibm_container_cluster_config" "cas" {
   cluster_name_id = ibm_container_vpc_cluster.cas_cluster.id

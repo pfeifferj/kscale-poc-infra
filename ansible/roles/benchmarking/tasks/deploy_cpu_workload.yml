@@ -1,0 +1,33 @@
+---
+- name: Deploy CPU intensive workloads
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "cpu-intensive-{{ cluster_type | lower }}-{{ item.size }}"
+        namespace: "{{ heterogeneous_workload.namespace }}"
+      spec:
+        replicas: 40
+        selector:
+          matchLabels:
+            app: "cpu-intensive-{{ cluster_type | lower }}-{{ item.size }}"
+        template:
+          metadata:
+            labels:
+              app: "cpu-intensive-{{ cluster_type | lower }}-{{ item.size }}"
+          spec:
+            containers:
+            - name: cpu-intensive-container
+              image: quay.io/kako1/stress:22
+              resources:
+                requests:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_request }}"
+                limits:
+                  cpu: "{{ item.cpu }}"
+                  memory: "{{ item.memory_limit }}"
+              command: ["stress"]
+              args: "{{ item.args }}"
+  environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ cluster_type)}) }}"
+  loop: "{{ heterogeneous_workload.cpu_intensive }}"

@@ -7,6 +7,10 @@
       AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default(omit) }}"
       AWS_DEFAULT_REGION: "{{ 'us-east-1' if cloud_provider == 'eks' else omit }}"
 
+# Run debug tasks before starting the experiment
+- name: Run debug tasks
+  include_tasks: debug.yml
+
 - name: Set experiment start time
   set_fact:
     experiment_start_time: "{{ lookup('pipe', 'date --utc +%Y-%m-%dT%H:%M:%SZ') }}"
@@ -14,30 +18,34 @@
 # Deploy homogeneous workload scenario
 - name: Deploy homogeneous workload
   block:
-    - name: Create namespace for homogeneous workload
+    - name: Create namespace for homogeneous workload in each cluster
       kubernetes.core.k8s:
         name: "{{ homogeneous_workload.namespace }}"
         api_version: v1
         kind: Namespace
         state: present
+      environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ item)}) }}"
+      loop:
+        - KARPENTER
+        - CAS
 
-    - name: Deploy homogeneous workload
+    - name: Deploy homogeneous workload to clusters
       kubernetes.core.k8s:
         definition:
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: homogeneous-workload
+            name: "homogeneous-workload-{{ item | lower }}"
             namespace: "{{ homogeneous_workload.namespace }}"
           spec:
             replicas: 40
             selector:
               matchLabels:
-                app: homogeneous-workload
+                app: "homogeneous-workload-{{ item | lower }}"
             template:
               metadata:
                 labels:
-                  app: homogeneous-workload
+                  app: "homogeneous-workload-{{ item | lower }}"
               spec:
                 containers:
                 - name: workload-container
@@ -51,51 +59,33 @@
                       memory: "{{ homogeneous_workload.container.resources.memory_limit }}"
                   command: ["stress"]
                   args: "{{ homogeneous_workload.container.args }}"
-  environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER')}) }}"
+      environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ item)}) }}"
+      loop:
+        - KARPENTER
+        - CAS
   when: workload_scenario == 'homogeneous'
 
 # Deploy heterogeneous workload scenario
 - name: Deploy heterogeneous workload
   block:
-    - name: Create namespace for heterogeneous workload
+    - name: Create namespace for heterogeneous workload in each cluster
       kubernetes.core.k8s:
         name: "{{ heterogeneous_workload.namespace }}"
         api_version: v1
         kind: Namespace
         state: present
+      environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ item)}) }}"
+      loop:
+        - KARPENTER
+        - CAS
 
-    - name: Deploy CPU intensive workloads
-      kubernetes.core.k8s:
-        definition:
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: "cpu-intensive-{{ item.size }}"
-            namespace: "{{ heterogeneous_workload.namespace }}"
-          spec:
-            replicas: 40
-            selector:
-              matchLabels:
-                app: "cpu-intensive-{{ item.size }}"
-            template:
-              metadata:
-                labels:
-                  app: "cpu-intensive-{{ item.size }}"
-              spec:
-                containers:
-                - name: cpu-intensive-container
-                  image: quay.io/kako1/stress:22
-                  resources:
-                    requests:
-                      cpu: "{{ item.cpu }}"
-                      memory: "{{ item.memory_request }}"
-                    limits:
-                      cpu: "{{ item.cpu }}"
-                      memory: "{{ item.memory_limit }}"
-                  command: ["stress"]
-                  args: "{{ item.args }}"
-      loop: "{{ heterogeneous_workload.cpu_intensive }}"
-  environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS')}) }}"
+    - name: Deploy CPU intensive workloads to clusters
+      include_tasks: deploy_cpu_workload.yml
+      loop:
+        - KARPENTER
+        - CAS
+      loop_control:
+        loop_var: cluster_type
   when: workload_scenario == 'heterogeneous'
 
 # Wait for workloads to stabilize
@@ -141,3 +131,7 @@
   vars:
     start_time: "{{ experiment_start_time }}"
     end_time: "{{ experiment_end_time }}"
+
+# Run debug tasks after running the experiment
+- name: Run debug tasks
+  include_tasks: debug.yml
