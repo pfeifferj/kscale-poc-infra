@@ -16,6 +16,11 @@
   register: all_pods_cas
   ignore_errors: true
 
+
+- name: Wait for workloads to stabilize
+  ansible.builtin.wait_for:
+    timeout: 60
+
 - name: Debug - Get Karpenter controller logs
   command: >-
     kubectl logs 
@@ -36,6 +41,26 @@
   register: cas_logs
   ignore_errors: true
 
+- name: Debug - Describe Karpenter pods
+  command: >-
+    kubectl describe pods
+    -n {{ 'karpenter' if cloud_provider == 'iks' else 'karpenter' }}
+    -l {{ 'app.kubernetes.io/name=karpenter' if cloud_provider == 'iks' else 'app.kubernetes.io/name=karpenter' }}
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+  environment: "{{ cloud_provider_env }}"
+  register: karpenter_describe
+  ignore_errors: true
+
+- name: Debug - Describe CAS pods
+  command: >-
+    kubectl describe pods
+    -n {{ 'kube-system' if cloud_provider == 'iks' else 'cluster-autoscaler' }}
+    -l {{ 'app=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
+  environment: "{{ cloud_provider_env }}"
+  register: cas_describe
+  ignore_errors: true
+
 - name: Display debug information
   debug:
     msg: 
@@ -47,3 +72,7 @@
       - "{{ karpenter_logs.stdout | default('Failed to get logs') }}"
       - "CAS Logs:"
       - "{{ cas_logs.stdout | default('Failed to get logs') }}"
+      - "Karpenter Pod Details:"
+      - "{{ karpenter_describe.stdout | default('Failed to get pod details') }}"
+      - "CAS Pod Details:"
+      - "{{ cas_describe.stdout | default('Failed to get pod details') }}"
