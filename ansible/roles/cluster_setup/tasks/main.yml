@@ -54,6 +54,26 @@
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
   when: cloud_provider == 'iks'
 
+# Configure IBM Cloud credentials for storage
+- name: Configure IBM Cloud credentials secret for storage
+  block:
+    - name: Create IBM Cloud credentials secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: ibm-cloud-credentials
+            namespace: default
+          type: Opaque
+          stringData:
+            "ibm-credentials.env": |
+              IBMCLOUD_APIKEY={{ IBM_CLOUD_TOKEN }}
+      environment:
+        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_CAS') }}"
+  when: cloud_provider == 'iks'
+
 # Install autoscaler based on provider
 - name: Configure autoscaler
   block:
@@ -179,12 +199,11 @@
             ibmApiKey: "{{ IBM_CLOUD_TOKEN }}"
             vpcApiKey: "{{ IBM_VPC_API_KEY }}"
             region: "us-south"
-            globalCatalogApiKey: "{{ IBM_CATALOG_API_KEY }}"
           image:
             repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud/controller
             tag: latest
             pullPolicy: IfNotPresent
-            digest: "sha256:ac29bb7b58a398a633e901085b2163623af25878732e46269d600b8294a06087"
+            digest: "sha256:a9dbe44708448b64eb8e66ec0401d288a19d95ee4299db59b450054bccb61ae9"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
       when: cloud_provider == 'iks'
