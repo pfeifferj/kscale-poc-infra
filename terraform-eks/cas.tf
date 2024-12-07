@@ -27,7 +27,7 @@ module "eks_al2" {
       instance_type = "m5.large"
 
       min_size = 1
-      max_size = 10
+      max_size = 6
       # This value is ignored after the initial creation
       # https://github.com/bryantbiggs/eks-desired-size-hack
       desired_size = var.worker_pool_count

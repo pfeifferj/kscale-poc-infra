@@ -16,16 +16,32 @@
   register: all_pods_cas
   ignore_errors: true
 
-
 - name: Wait for workloads to stabilize
   ansible.builtin.wait_for:
     timeout: 60
 
+- name: Debug - Get Karpenter pods
+  command: >-
+    kubectl get pods -A
+    -l app.kubernetes.io/name=karpenter
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+  environment: "{{ cloud_provider_env }}"
+  register: karpenter_pods
+  ignore_errors: true
+
+- name: Debug - Get CAS pods
+  command: >-
+    kubectl get pods -A
+    -l {{ 'app.kubernetes.io/name=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
+  environment: "{{ cloud_provider_env }}"
+  register: cas_pods
+  ignore_errors: true
+
 - name: Debug - Get Karpenter controller logs
   command: >-
-    kubectl logs 
-    -n {{ 'karpenter' if cloud_provider == 'iks' else 'karpenter' }}
-    -l {{ 'app.kubernetes.io/name=karpenter' if cloud_provider == 'iks' else 'app.kubernetes.io/name=karpenter' }}
+    kubectl logs -A
+    -l app.kubernetes.io/name=karpenter
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
   environment: "{{ cloud_provider_env }}"
   register: karpenter_logs
@@ -33,29 +49,26 @@
 
 - name: Debug - Get CAS controller logs
   command: >-
-    kubectl logs 
-    -n {{ 'kube-system' if cloud_provider == 'iks' else 'cluster-autoscaler' }}
-    -l {{ 'app=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
+    kubectl logs -A
+    -l {{ 'app.kubernetes.io/name=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
   environment: "{{ cloud_provider_env }}"
   register: cas_logs
   ignore_errors: true
 
-- name: Debug - Describe Karpenter pods
+- name: Debug - Describe Karpenter deployment
   command: >-
-    kubectl describe pods
-    -n {{ 'karpenter' if cloud_provider == 'iks' else 'karpenter' }}
-    -l {{ 'app.kubernetes.io/name=karpenter' if cloud_provider == 'iks' else 'app.kubernetes.io/name=karpenter' }}
+    kubectl describe deployment -A
+    -l app.kubernetes.io/name=karpenter
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
   environment: "{{ cloud_provider_env }}"
   register: karpenter_describe
   ignore_errors: true
 
-- name: Debug - Describe CAS pods
+- name: Debug - Describe CAS deployment
   command: >-
-    kubectl describe pods
-    -n {{ 'kube-system' if cloud_provider == 'iks' else 'cluster-autoscaler' }}
-    -l {{ 'app=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
+    kubectl describe deployment -A
+    -l {{ 'app.kubernetes.io/name=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
   environment: "{{ cloud_provider_env }}"
   register: cas_describe
@@ -68,6 +81,10 @@
       - "{{ all_pods_karpenter.stdout | default('Failed to get pods') }}"
       - "CAS Pods Status:"
       - "{{ all_pods_cas.stdout | default('Failed to get pods') }}"
+      - "Karpenter Pods in Namespace:"
+      - "{{ karpenter_pods.stdout | default('Failed to get pods') }}"
+      - "CAS Pods in Namespace:"
+      - "{{ cas_pods.stdout | default('Failed to get pods') }}"
       - "Karpenter Logs:"
       - "{{ karpenter_logs.stdout | default('Failed to get logs') }}"
       - "CAS Logs:"
