@@ -20,6 +20,28 @@
   ansible.builtin.wait_for:
     timeout: 60
 
+- name: Debug - Get Karpenter pods and extract namespace
+  command: >-
+    kubectl get pods -A
+    -l app.kubernetes.io/name=karpenter
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+    -o custom-columns=NAMESPACE:.metadata.namespace
+    --no-headers
+  environment: "{{ cloud_provider_env }}"
+  register: karpenter_namespace
+  ignore_errors: true
+
+- name: Debug - Get CAS pods and extract namespace
+  command: >-
+    kubectl get pods -A
+    -l {{ 'app.kubernetes.io/name=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
+    -o custom-columns=NAMESPACE:.metadata.namespace
+    --no-headers
+  environment: "{{ cloud_provider_env }}"
+  register: cas_namespace
+  ignore_errors: true
+
 - name: Debug - Get Karpenter pods
   command: >-
     kubectl get pods -A
@@ -40,39 +62,47 @@
 
 - name: Debug - Get Karpenter controller logs
   command: >-
-    kubectl logs -A
+    kubectl logs
+    -n {{ karpenter_namespace.stdout_lines[0] }}
     -l app.kubernetes.io/name=karpenter
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
   environment: "{{ cloud_provider_env }}"
   register: karpenter_logs
   ignore_errors: true
+  when: karpenter_namespace.stdout_lines[0] is defined
 
 - name: Debug - Get CAS controller logs
   command: >-
-    kubectl logs -A
+    kubectl logs
+    -n {{ cas_namespace.stdout_lines[0] }}
     -l {{ 'app.kubernetes.io/name=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
   environment: "{{ cloud_provider_env }}"
   register: cas_logs
   ignore_errors: true
+  when: cas_namespace.stdout_lines[0] is defined
 
 - name: Debug - Describe Karpenter deployment
   command: >-
-    kubectl describe deployment -A
+    kubectl describe deployment
+    -n {{ karpenter_namespace.stdout_lines[0] }}
     -l app.kubernetes.io/name=karpenter
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
   environment: "{{ cloud_provider_env }}"
   register: karpenter_describe
   ignore_errors: true
+  when: karpenter_namespace.stdout_lines[0] is defined
 
 - name: Debug - Describe CAS deployment
   command: >-
-    kubectl describe deployment -A
+    kubectl describe deployment
+    -n {{ cas_namespace.stdout_lines[0] }}
     -l {{ 'app.kubernetes.io/name=ibm-iks-cluster-autoscaler' if cloud_provider == 'iks' else 'app=cluster-autoscaler' }}
     --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_CAS') }}
   environment: "{{ cloud_provider_env }}"
   register: cas_describe
   ignore_errors: true
+  when: cas_namespace.stdout_lines[0] is defined
 
 - name: Display debug information
   debug:

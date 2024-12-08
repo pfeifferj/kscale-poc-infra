@@ -203,7 +203,7 @@
             repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud/controller
             tag: latest
             pullPolicy: IfNotPresent
-            digest: "sha256:c120b3d505053991c6985d2aecd75d0662fffb6327a9fed6763a45a4b8a05258"
+            digest: "sha256:60c16d8efc3a7bc50c781ffbcd858a7cea74027becec136082e471b4f03c51b8"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
       when: cloud_provider == 'iks'
