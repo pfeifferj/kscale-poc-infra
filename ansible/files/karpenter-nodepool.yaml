@@ -1,0 +1,26 @@
+apiVersion: karpenter.ibm.sh/v1
+kind: NodePool
+metadata:
+  name: default
+spec:
+  template:
+    spec:
+      profile: bx2.4x16
+      zone: us-south-1
+      nodeClassRef:
+        group: karpenter.ibm.sh
+        kind: NodeClass
+        name: default
+      requirements:
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values:
+            - bx2.4x16
+            - cx2.4x8
+            - mx2.4x32
+  scaling:
+    minSize: 1
+    maxSize: 9
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 30s

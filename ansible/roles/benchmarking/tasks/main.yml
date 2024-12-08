@@ -93,33 +93,33 @@
   ansible.builtin.wait_for:
     timeout: 600
 
-# Delete workload namespaces
-- name: Delete homogeneous workload namespace
+# Set namespace state to match deployment state
+- name: Set homogeneous workload namespace state
   kubernetes.core.k8s:
     name: "{{ homogeneous_workload.namespace }}"
     api_version: v1
     kind: Namespace
-    state: absent
+    state: present
   environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ item)}) }}"
   loop:
     - KARPENTER
     - CAS
   when: workload_scenario == 'homogeneous'
 
-- name: Delete heterogeneous workload namespace
+- name: Set heterogeneous workload namespace state
   kubernetes.core.k8s:
     name: "{{ heterogeneous_workload.namespace }}"
     api_version: v1
     kind: Namespace
-    state: absent
+    state: present
   environment: "{{ cloud_provider_env | combine({'KUBECONFIG': lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_' ~ item)}) }}"
   loop:
     - KARPENTER
     - CAS
   when: workload_scenario == 'heterogeneous'
 
-# Wait for scale down after namespace deletion
-- name: Wait for scale down after namespace deletion
+# Wait for scale down after namespace state change
+- name: Wait for scale down after namespace state change
   ansible.builtin.wait_for:
     timeout: 600
 

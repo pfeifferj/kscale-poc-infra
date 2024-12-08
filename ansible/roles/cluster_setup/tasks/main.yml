@@ -1,4 +1,3 @@
----
 # Install Prometheus for metrics collection
 - name: Add prometheus-community helm chart repo
   kubernetes.core.helm_repository:
@@ -204,6 +203,14 @@
             tag: latest
             pullPolicy: IfNotPresent
             digest: "sha256:60c16d8efc3a7bc50c781ffbcd858a7cea74027becec136082e471b4f03c51b8"
+      environment:
+        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
+      when: cloud_provider == 'iks'
+
+    - name: Apply Karpenter NodePool configuration
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/files/karpenter-nodepool.yaml"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
       when: cloud_provider == 'iks'

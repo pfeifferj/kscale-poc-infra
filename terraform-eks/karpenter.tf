@@ -65,7 +65,7 @@ module "eks" {
   }
 
   vpc_id                   = module.vpc.vpc_id
-  subnet_ids               = module.vpc.private_subnets
+  subnet_ids              = module.vpc.private_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
   eks_managed_node_groups = {
@@ -74,7 +74,7 @@ module "eks" {
       instance_types = [var.flavour]
 
       min_size     = 1
-      max_size     = 10
+      max_size     = 9
       desired_size = var.worker_pool_count
     }
   }
