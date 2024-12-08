@@ -90,7 +90,7 @@ module "eks" {
 # Karpenter
 ################################################################################
 
-# Additional IAM policy for service-linked role creation
+# Updated IAM policy for service-linked role creation
 resource "aws_iam_policy" "karpenter_service_linked_role" {
   name = "KarpenterServiceLinkedRole"
   policy = jsonencode({
@@ -99,12 +99,7 @@ resource "aws_iam_policy" "karpenter_service_linked_role" {
       {
         Effect   = "Allow"
         Action   = "iam:CreateServiceLinkedRole"
-        Resource = "arn:aws:iam::*:role/aws-service-role/spot.amazonaws.com/*"
-        Condition = {
-          StringLike = {
-            "iam:AWSServiceName" : "spot.amazonaws.com"
-          }
-        }
+        Resource = "*"
       }
     ]
   })
