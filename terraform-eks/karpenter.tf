@@ -97,12 +97,25 @@ resource "aws_iam_policy" "karpenter_service_linked_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = "iam:CreateServiceLinkedRole"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateServiceLinkedRole",
+          "ec2:RequestSpotInstances",
+          "ec2:CreateSpotDatafeedSubscription",
+          "ec2:DeleteSpotDatafeedSubscription",
+          "ec2:DescribeSpotInstanceRequests",
+          "ec2:CancelSpotInstanceRequests"
+        ]
         Resource = "*"
       }
     ]
   })
+}
+
+# Create IAM role policy attachment
+resource "aws_iam_role_policy_attachment" "karpenter_spot_policy" {
+  role       = module.karpenter.iam_role_name
+  policy_arn = aws_iam_policy.karpenter_service_linked_role.arn
 }
 
 module "karpenter" {
@@ -150,6 +163,8 @@ resource "helm_release" "karpenter" {
     <<-EOT
     serviceAccount:
       name: ${module.karpenter.service_account}
+      annotations:
+        eks.amazonaws.com/role-arn: ${module.karpenter.iam_role_arn}
     settings:
       clusterName: ${module.eks.cluster_name}
       clusterEndpoint: ${module.eks.cluster_endpoint}
@@ -186,6 +201,8 @@ resource "kubectl_manifest" "karpenter_node_class" {
             karpenter.sh/discovery: ${module.eks.cluster_name}
       tags:
         karpenter.sh/discovery: ${module.eks.cluster_name}
+      # Enable spot instances
+      capacityType: spot
   YAML
 
   depends_on = [
@@ -217,6 +234,12 @@ resource "kubectl_manifest" "karpenter_node_pool" {
             - key: "karpenter.k8s.aws/instance-generation"
               operator: Gt
               values: ["2"]
+            - key: "kubernetes.io/arch"
+              operator: In
+              values: ["amd64"]
+            - key: "karpenter.sh/capacity-type"  # Add spot instance requirement
+              operator: In
+              values: ["spot"]
       limits:
         cpu: 1000
       disruption:

@@ -8,10 +8,10 @@ homogeneous_workload:
   container:
     image: quay.io/kako1/stress:22
     resources:
-      cpu: "2000m"
+      cpu: "250m"
       memory_request: "256Mi"
       memory_limit: "512Mi"
-    args: ["--cpu", "2", "--timeout", "3600", "--vm", "1", "--vm-bytes", "128M", "--io", "2"]
+    args: ["--cpu", "1", "--timeout", "3600", "--vm", "1", "--vm-bytes", "128M", "--io", "2"]
   replicas: 40
 
 heterogeneous_workload:
@@ -50,3 +50,17 @@ prometheus_queries:
     metricName: 'API99thLatency'
   - query: 'histogram_quantile(0.99, sum(rate(kubelet_runtime_operations_duration_seconds_bucket{operation_type="create_container"}[5m])) by (instance, le)) > 0'
     metricName: 'ContainerStartupLatency'
+
+# Metrics collection configuration
+metrics_collection:
+  # Port-forward service configuration
+  port_forward_wait_timeout: 60  # seconds to wait for port-forward services to be ready
+  
+  # Prometheus health check configuration
+  health_check_retries: 60
+  health_check_delay: 10  # seconds between health check retries
+  
+  # Metrics query configuration
+  query_retries: 60
+  query_delay: 10  # seconds between query retries
+  query_step: "30s"  # prometheus query resolution step
