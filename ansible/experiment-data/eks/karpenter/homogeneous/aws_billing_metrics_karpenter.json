@@ -1,0 +1,46 @@
+{
+    "ResultsByTime": [
+        {
+            "TimePeriod": {
+                "Start": "2024-11-12",
+                "End": "2024-12-01"
+            },
+            "Total": {
+                "UnblendedCost": {
+                    "Amount": "0",
+                    "Unit": "USD"
+                }
+            },
+            "Groups": [],
+            "Estimated": false
+        },
+        {
+            "TimePeriod": {
+                "Start": "2024-12-01",
+                "End": "2024-12-12"
+            },
+            "Total": {
+                "UnblendedCost": {
+                    "Amount": "0",
+                    "Unit": "USD"
+                }
+            },
+            "Groups": [],
+            "Estimated": true
+        }
+    ],
+    "DimensionValueAttributes": [],
+    "ResponseMetadata": {
+        "RequestId": "7a7e37e6-2f6d-4133-b8fa-4dbf01410122",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "date": "Thu, 12 Dec 2024 15:27:29 GMT",
+            "content-type": "application/x-amz-json-1.1",
+            "content-length": "330",
+            "connection": "keep-alive",
+            "x-amzn-requestid": "7a7e37e6-2f6d-4133-b8fa-4dbf01410122",
+            "cache-control": "no-cache"
+        },
+        "RetryAttempts": 0
+    }
+}

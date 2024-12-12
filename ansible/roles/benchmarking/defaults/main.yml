@@ -50,17 +50,23 @@ prometheus_queries:
     metricName: 'API99thLatency'
   - query: 'histogram_quantile(0.99, sum(rate(kubelet_runtime_operations_duration_seconds_bucket{operation_type="create_container"}[5m])) by (instance, le)) > 0'
     metricName: 'ContainerStartupLatency'
+  - query: 'count(kube_pod_status_phase{phase="Pending"})'
+    metricName: 'PendingPods'
+  - query: 'count(kube_pod_status_phase{phase="Pending"})'
+    metricName: 'PendingPods'
+  - query: 'count(kube_pod_status_phase)'
+    metricName: 'TotalPods'
 
 # Metrics collection configuration
 metrics_collection:
   # Port-forward service configuration
-  port_forward_wait_timeout: 60  # seconds to wait for port-forward services to be ready
+  port_forward_wait_timeout: 120  # increased timeout for stability
   
   # Prometheus health check configuration
-  health_check_retries: 60
-  health_check_delay: 10  # seconds between health check retries
+  health_check_retries: 30
+  health_check_delay: 20  # increased delay between retries
   
   # Metrics query configuration
-  query_retries: 60
-  query_delay: 10  # seconds between query retries
-  query_step: "30s"  # prometheus query resolution step
+  query_retries: 30
+  query_delay: 20  # increased delay between retries
+  query_step: "60s"  # increased step to reduce load

@@ -5,22 +5,23 @@ metadata:
 spec:
   template:
     spec:
-      profile: bx2.4x16
-      zone: us-south-1
       nodeClassRef:
         group: karpenter.ibm.sh
-        kind: NodeClass
-        name: default
+        kind: IBMNodeClass
+        name: auto-placement
       requirements:
-        - key: node.kubernetes.io/instance-type
+        - key: "kubernetes.io/arch"
           operator: In
-          values:
-            - bx2.4x16
-            - cx2.4x8
-            - mx2.4x32
-  scaling:
-    minSize: 1
-    maxSize: 9
+          values: ["amd64"]
+        - key: "kubernetes.io/os"
+          operator: In
+          values: ["linux"]
+        - key: "monitoring"
+          operator: In
+          values: ["true"]
   disruption:
-    consolidationPolicy: WhenEmpty
     consolidateAfter: 30s
+    consolidationPolicy: WhenEmpty
+  limits:
+    cpu: "1000"
+  weight: 100

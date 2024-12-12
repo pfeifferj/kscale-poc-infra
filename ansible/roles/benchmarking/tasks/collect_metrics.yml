@@ -48,19 +48,10 @@
 
 # Fetch metrics from prometheus using experiment timestamps
 - name: Fetch metrics from prometheus
-  ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ item.1.port }}/api/v1/query_range"
-    method: GET
-    return_content: yes
-    body_format: raw
-    status_code: [200, 201]
-    params:
-      query: "{{ item.0.query }}"
-      start: "{{ start_time }}"
-      end: "{{ end_time }}"
-      step: "{{ metrics_collection.query_step }}"
+  ansible.builtin.command:
+    cmd: "curl -s -f 'http://127.0.0.1:{{ item.1.port }}/api/v1/query_range?query={{ item.0.query | urlencode }}&start={{ start_time }}&end={{ end_time }}&step=30s'"
   register: query_response
-  until: query_response.status in [200, 201]
+  until: query_response.rc == 0
   retries: "{{ metrics_collection.query_retries }}"
   delay: "{{ metrics_collection.query_delay }}"
   loop: "{{ prometheus_queries | product(cluster_list) | list }}"
@@ -75,7 +66,7 @@
 # Save metrics to files in workload scenario subdirs
 - name: Save metrics to files
   copy:
-    content: "{{ item.content if item.content is defined else {} | to_json }}"
+    content: "{{ item.stdout | default('{}') }}"
     dest: "{{ playbook_dir }}/experiment-data/{{ cloud_provider }}/{{ item.item.1.cluster }}/{{ workload_scenario }}/{{ item.item.0.metricName }}.json"
   loop: "{{ query_response.results }}"
   loop_control:

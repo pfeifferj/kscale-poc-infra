@@ -20,6 +20,12 @@
   ansible.builtin.wait_for:
     timeout: 60
 
+- name: Debug - Get all pods across all namespaces
+  command: kubectl get po -A -o wide --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+  environment: "{{ cloud_provider_env }}"
+  register: all_pods
+  ignore_errors: true
+
 - name: Debug - Get Karpenter pods and extract namespace
   command: >-
     kubectl get pods -A
@@ -104,22 +110,65 @@
   ignore_errors: true
   when: cas_namespace.stdout_lines[0] is defined
 
+- name: Debug - Get Karpenter resources
+  command: >-
+    kubectl get nodeclass,nodepool,provisioner -A
+    --kubeconfig={{ lookup('vars', 'KUBECONFIG_' ~ cloud_provider | upper ~ '_KARPENTER') }}
+  environment: "{{ cloud_provider_env }}"
+  register: karpenter_resources
+  ignore_errors: true
+
+- name: Set debug summary
+  set_fact:
+    debug_summary: |
+      All Pods Across Namespaces:
+      {{ all_pods.stdout | default('Failed to get pods') }}
+
+      Karpenter Pods Status:
+      {{ all_pods_karpenter.stdout | default('Failed to get pods') }}
+      
+      CAS Pods Status:
+      {{ all_pods_cas.stdout | default('Failed to get pods') }}
+      
+      Karpenter Pods in Namespace:
+      {{ karpenter_pods.stdout | default('Failed to get pods') }}
+      
+      CAS Pods in Namespace:
+      {{ cas_pods.stdout | default('Failed to get pods') }}
+      
+      Karpenter Logs:
+      {{ karpenter_logs.stdout | default('Failed to get logs') }}
+      
+      CAS Logs:
+      {{ cas_logs.stdout | default('Failed to get logs') }}
+      
+      Karpenter Pod Details:
+      {{ karpenter_describe.stdout | default('Failed to get pod details') }}
+      
+      CAS Pod Details:
+      {{ cas_describe.stdout | default('Failed to get pod details') }}
+      
+      Karpenter Resources:
+      {{ karpenter_resources.stdout | default('Failed to get Karpenter resources') }}
+
 - name: Display debug information
   debug:
-    msg: 
-      - "Karpenter Pods Status:"
-      - "{{ all_pods_karpenter.stdout | default('Failed to get pods') }}"
-      - "CAS Pods Status:"
-      - "{{ all_pods_cas.stdout | default('Failed to get pods') }}"
-      - "Karpenter Pods in Namespace:"
-      - "{{ karpenter_pods.stdout | default('Failed to get pods') }}"
-      - "CAS Pods in Namespace:"
-      - "{{ cas_pods.stdout | default('Failed to get pods') }}"
-      - "Karpenter Logs:"
-      - "{{ karpenter_logs.stdout | default('Failed to get logs') }}"
-      - "CAS Logs:"
-      - "{{ cas_logs.stdout | default('Failed to get logs') }}"
-      - "Karpenter Pod Details:"
-      - "{{ karpenter_describe.stdout | default('Failed to get pod details') }}"
-      - "CAS Pod Details:"
-      - "{{ cas_describe.stdout | default('Failed to get pod details') }}"
+    msg: "{{ debug_summary.split('\n') }}"
+
+- name: Ensure debug directories exist
+  file:
+    path: "ansible/experiment-data/{{ cloud_provider }}/{{ workload_scenario }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - karpenter
+    - cas
+
+- name: Write debug information to files
+  copy:
+    content: "{{ debug_summary }}"
+    dest: "ansible/experiment-data/{{ cloud_provider }}/{{ workload_scenario }}/{{ item }}/debug_summary.txt"
+    mode: '0644'
+  loop:
+    - karpenter
+    - cas

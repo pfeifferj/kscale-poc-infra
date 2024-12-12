@@ -52,8 +52,6 @@ module "eks" {
   cluster_name    = local.name
   cluster_version = var.kube_version
 
-  # Gives Terraform identity admin access to cluster which will
-  # allow deploying resources (Karpenter) into the cluster
   enable_cluster_creator_admin_permissions = true
   cluster_endpoint_public_access           = true
 
@@ -65,7 +63,7 @@ module "eks" {
   }
 
   vpc_id                   = module.vpc.vpc_id
-  subnet_ids              = module.vpc.private_subnets
+  subnet_ids               = module.vpc.private_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
   eks_managed_node_groups = {
@@ -79,9 +77,9 @@ module "eks" {
     }
   }
 
-  node_security_group_tags = merge(local.tags, {
+  node_security_group_tags = {
     "karpenter.sh/discovery" = local.name
-  })
+  }
 
   tags = local.tags
 }
@@ -90,7 +88,6 @@ module "eks" {
 # Karpenter
 ################################################################################
 
-# Updated IAM policy for service-linked role creation
 resource "aws_iam_policy" "karpenter_service_linked_role" {
   name = "KarpenterServiceLinkedRole"
   policy = jsonencode({
@@ -112,7 +109,6 @@ resource "aws_iam_policy" "karpenter_service_linked_role" {
   })
 }
 
-# Create IAM role policy attachment
 resource "aws_iam_role_policy_attachment" "karpenter_spot_policy" {
   role       = module.karpenter.iam_role_name
   policy_arn = aws_iam_policy.karpenter_service_linked_role.arn
@@ -128,7 +124,6 @@ module "karpenter" {
   enable_pod_identity             = true
   create_pod_identity_association = true
 
-  # Used to attach additional IAM policies to the Karpenter node IAM role
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
     KarpenterServiceLinkedRole   = aws_iam_policy.karpenter_service_linked_role.arn
@@ -139,7 +134,6 @@ module "karpenter" {
 
 module "karpenter_disabled" {
   source = "terraform-aws-modules/eks/aws//modules/karpenter"
-
   create = false
 }
 
@@ -201,8 +195,8 @@ resource "kubectl_manifest" "karpenter_node_class" {
             karpenter.sh/discovery: ${module.eks.cluster_name}
       tags:
         karpenter.sh/discovery: ${module.eks.cluster_name}
-      # Enable spot instances
-      capacityType: spot
+      # Try on-demand first, then spot
+      capacityTypes: ["on-demand", "spot"]
   YAML
 
   depends_on = [
@@ -224,10 +218,10 @@ resource "kubectl_manifest" "karpenter_node_pool" {
           requirements:
             - key: "karpenter.k8s.aws/instance-category"
               operator: In
-              values: ["c", "m", "r"]
+              values: ["c", "m", "r", "t"]
             - key: "karpenter.k8s.aws/instance-cpu"
               operator: In
-              values: ["4", "8", "16", "32"]
+              values: ["2", "4", "8", "16"]
             - key: "karpenter.k8s.aws/instance-hypervisor"
               operator: In
               values: ["nitro"]
@@ -237,14 +231,15 @@ resource "kubectl_manifest" "karpenter_node_pool" {
             - key: "kubernetes.io/arch"
               operator: In
               values: ["amd64"]
-            - key: "karpenter.sh/capacity-type"  # Add spot instance requirement
+            - key: "topology.kubernetes.io/zone" 
               operator: In
-              values: ["spot"]
+              values: ["us-east-1b", "us-east-1c", "us-east-1d", "us-east-1f"]
       limits:
         cpu: 1000
       disruption:
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
+      # Removed weighted capacity types to simplify
   YAML
 
   depends_on = [
@@ -276,7 +271,8 @@ module "vpc" {
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
-    # Tags subnets for Karpenter auto-discovery
-    "karpenter.sh/discovery" = local.name
+    "karpenter.sh/discovery"          = local.name
   }
+
+  tags = local.tags
 }

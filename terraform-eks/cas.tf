@@ -26,7 +26,7 @@ module "eks_al2" {
       ami_type      = "AL2_x86_64"
       instance_type = "m5.large"
 
-      min_size = 1
+      min_size = 2 # Increased from 1 to 2 to maintain capacity for system components
       max_size = 6
       # This value is ignored after the initial creation
       # https://github.com/bryantbiggs/eks-desired-size-hack

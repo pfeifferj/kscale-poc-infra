@@ -16,6 +16,40 @@
       prometheus:
         prometheusSpec:
           enableAdminAPI: true
+          priorityClassName: system-cluster-critical
+          podDisruptionBudget:
+            enabled: true
+            minAvailable: 1
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          tolerations:
+            - key: "monitoring"
+              operator: "Equal"
+              value: "true"
+              effect: "NoSchedule"
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - prometheus
+                topologyKey: "kubernetes.io/hostname"
+      prometheusOperator:
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
   loop:
     - karpenter
     - cas
@@ -54,7 +88,7 @@
   when: cloud_provider == 'iks'
 
 # Configure IBM Cloud credentials for storage
-- name: Configure IBM Cloud credentials secret for storage
+- name: Configure IBM Cloud credentials for storage
   block:
     - name: Create IBM Cloud credentials secret
       kubernetes.core.k8s:
@@ -202,7 +236,15 @@
             repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud/controller
             tag: latest
             pullPolicy: IfNotPresent
-            digest: "sha256:60c16d8efc3a7bc50c781ffbcd858a7cea74027becec136082e471b4f03c51b8"
+            digest: "sha256:8ba029dcbb96cf37016a4ecd60e72e5122c2f596ce3c39cbac7e9c04b418f2c3"
+      environment:
+        KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
+      when: cloud_provider == 'iks'
+
+    - name: Apply Karpenter NodeClass configuration
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/files/karpenter-nodeclass.yaml"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
       when: cloud_provider == 'iks'
