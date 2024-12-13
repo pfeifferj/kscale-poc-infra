@@ -56,6 +56,10 @@ prometheus_queries:
     metricName: 'PendingPods'
   - query: 'count(kube_pod_status_phase)'
     metricName: 'TotalPods'
+  - query: 'sum(rate(node_cpu_seconds_total{mode!="idle"}[1m])) by (instance)'
+    metricName: 'TotalCPUUtilization'
+  - query: 'sum(rate(node_memory_MemTotal_bytes[1m]) - rate(node_memory_MemAvailable_bytes[1m])) by (instance)'
+    metricName: 'TotalMemoryUtilization'
 
 # Metrics collection configuration
 metrics_collection:

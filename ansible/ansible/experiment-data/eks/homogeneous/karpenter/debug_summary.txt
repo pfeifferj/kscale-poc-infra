@@ -1,0 +1,160 @@
+All Pods Across Namespaces:
+NAMESPACE     NAME                                                     READY   STATUS    RESTARTS   AGE   IP            NODE                          NOMINATED NODE   READINESS GATES
+kube-system   aws-node-8mq5g                                           2/2     Running   0          29m   10.0.6.46     ip-10-0-6-46.ec2.internal     <none>           <none>
+kube-system   aws-node-b67mc                                           2/2     Running   0          29m   10.0.43.126   ip-10-0-43-126.ec2.internal   <none>           <none>
+kube-system   aws-node-rhm9r                                           2/2     Running   0          29m   10.0.21.190   ip-10-0-21-190.ec2.internal   <none>           <none>
+kube-system   coredns-54d6f577c6-h7zbs                                 1/1     Running   0          33m   10.0.33.129   ip-10-0-43-126.ec2.internal   <none>           <none>
+kube-system   coredns-54d6f577c6-zc48z                                 1/1     Running   0          33m   10.0.25.117   ip-10-0-21-190.ec2.internal   <none>           <none>
+kube-system   eks-pod-identity-agent-95bzl                             1/1     Running   0          29m   10.0.6.46     ip-10-0-6-46.ec2.internal     <none>           <none>
+kube-system   eks-pod-identity-agent-b58k4                             1/1     Running   0          29m   10.0.43.126   ip-10-0-43-126.ec2.internal   <none>           <none>
+kube-system   eks-pod-identity-agent-sdhmd                             1/1     Running   0          29m   10.0.21.190   ip-10-0-21-190.ec2.internal   <none>           <none>
+kube-system   karpenter-6f7df5d5d7-z7t26                               1/1     Running   0          28m   10.0.14.66    ip-10-0-6-46.ec2.internal     <none>           <none>
+kube-system   kube-proxy-67lc5                                         1/1     Running   0          30m   10.0.6.46     ip-10-0-6-46.ec2.internal     <none>           <none>
+kube-system   kube-proxy-lffvg                                         1/1     Running   0          30m   10.0.21.190   ip-10-0-21-190.ec2.internal   <none>           <none>
+kube-system   kube-proxy-qvcmw                                         1/1     Running   0          30m   10.0.43.126   ip-10-0-43-126.ec2.internal   <none>           <none>
+monitoring    alertmanager-prometheus-operator-kube-p-alertmanager-0   2/2     Running   0          25m   10.0.36.217   ip-10-0-43-126.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-kube-p-operator-6b795b97b6-dhsnl     1/1     Running   0          26m   10.0.22.100   ip-10-0-21-190.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-kube-state-metrics-7d7756cc6-wklb8   1/1     Running   0          26m   10.0.34.228   ip-10-0-43-126.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-prometheus-node-exporter-25gvx       1/1     Running   0          26m   10.0.43.126   ip-10-0-43-126.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-prometheus-node-exporter-6tbbm       1/1     Running   0          26m   10.0.6.46     ip-10-0-6-46.ec2.internal     <none>           <none>
+monitoring    prometheus-operator-prometheus-node-exporter-h7rxk       1/1     Running   0          26m   10.0.21.190   ip-10-0-21-190.ec2.internal   <none>           <none>
+monitoring    prometheus-prometheus-operator-kube-p-prometheus-0       2/2     Running   0          25m   10.0.25.142   ip-10-0-21-190.ec2.internal   <none>           <none>
+
+Karpenter Pods Status:
+NAMESPACE     NAME                                                     READY   STATUS    RESTARTS   AGE
+kube-system   aws-node-8mq5g                                           2/2     Running   0          28m
+kube-system   aws-node-b67mc                                           2/2     Running   0          28m
+kube-system   aws-node-rhm9r                                           2/2     Running   0          28m
+kube-system   coredns-54d6f577c6-h7zbs                                 1/1     Running   0          32m
+kube-system   coredns-54d6f577c6-zc48z                                 1/1     Running   0          32m
+kube-system   eks-pod-identity-agent-95bzl                             1/1     Running   0          28m
+kube-system   eks-pod-identity-agent-b58k4                             1/1     Running   0          28m
+kube-system   eks-pod-identity-agent-sdhmd                             1/1     Running   0          28m
+kube-system   karpenter-6f7df5d5d7-z7t26                               1/1     Running   0          27m
+kube-system   kube-proxy-67lc5                                         1/1     Running   0          29m
+kube-system   kube-proxy-lffvg                                         1/1     Running   0          29m
+kube-system   kube-proxy-qvcmw                                         1/1     Running   0          29m
+monitoring    alertmanager-prometheus-operator-kube-p-alertmanager-0   2/2     Running   0          24m
+monitoring    prometheus-operator-kube-p-operator-6b795b97b6-dhsnl     1/1     Running   0          25m
+monitoring    prometheus-operator-kube-state-metrics-7d7756cc6-wklb8   1/1     Running   0          25m
+monitoring    prometheus-operator-prometheus-node-exporter-25gvx       1/1     Running   0          25m
+monitoring    prometheus-operator-prometheus-node-exporter-6tbbm       1/1     Running   0          25m
+monitoring    prometheus-operator-prometheus-node-exporter-h7rxk       1/1     Running   0          25m
+monitoring    prometheus-prometheus-operator-kube-p-prometheus-0       2/2     Running   0          24m
+
+CAS Pods Status:
+NAMESPACE     NAME                                                     READY   STATUS    RESTARTS      AGE
+cas           cas-aws-cluster-autoscaler-5bd47d57d6-kx7wg              1/1     Running   1 (20m ago)   23m
+kube-system   aws-node-cwl67                                           2/2     Running   0             27m
+kube-system   aws-node-lwz84                                           2/2     Running   0             27m
+kube-system   coredns-54d6f577c6-ccj96                                 1/1     Running   0             31m
+kube-system   coredns-54d6f577c6-vzkm7                                 1/1     Running   0             31m
+kube-system   eks-pod-identity-agent-gqx26                             1/1     Running   0             27m
+kube-system   eks-pod-identity-agent-vbjf4                             1/1     Running   0             27m
+kube-system   kube-proxy-67l7t                                         1/1     Running   0             27m
+kube-system   kube-proxy-7x7z6                                         1/1     Running   0             28m
+monitoring    alertmanager-prometheus-operator-kube-p-alertmanager-0   2/2     Running   0             9m37s
+monitoring    prometheus-operator-kube-p-operator-6b795b97b6-jkv6f     1/1     Running   0             9m39s
+monitoring    prometheus-operator-kube-state-metrics-7d7756cc6-8985s   1/1     Running   2 (20m ago)   24m
+monitoring    prometheus-operator-prometheus-node-exporter-dg6tb       1/1     Running   4 (13m ago)   24m
+monitoring    prometheus-operator-prometheus-node-exporter-nd6dk       1/1     Running   0             24m
+monitoring    prometheus-prometheus-operator-kube-p-prometheus-0       2/2     Running   0             24m
+
+Karpenter Pods in Namespace:
+NAMESPACE     NAME                         READY   STATUS    RESTARTS   AGE
+kube-system   karpenter-6f7df5d5d7-z7t26   1/1     Running   0          28m
+
+CAS Pods in Namespace:
+
+
+Karpenter Logs:
+{"level":"ERROR","time":"2024-12-12T15:08:47.286Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"390b3c0e-8e2b-4086-a195-0fe724327df1","error":"launching nodeclaim, creating instance, with fleet error(s), InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded"}
+{"level":"ERROR","time":"2024-12-12T15:09:31.235Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"38bcd592-2524-4b72-90d7-4e247adebf70","error":"launching nodeclaim, creating instance, with fleet error(s), InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks.; InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InsufficientInstanceCapacity: We currently do not have sufficient r6a.2xlarge capacity in the Availability Zone you requested (us-east-1a). Our system will be working on provisioning additional capacity. You can currently get r6a.2xlarge capacity by not specifying an Availability Zone in your request or choosing us-east-1b, us-east-1c, us-east-1d, us-east-1f."}
+{"level":"ERROR","time":"2024-12-12T15:10:16.307Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"f9adc0ed-7cff-487c-a2cf-82c9e2d1828f","error":"launching nodeclaim, creating instance, with fleet error(s), InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InsufficientInstanceCapacity: There is no Spot capacity available that matches your request."}
+{"level":"ERROR","time":"2024-12-12T15:11:05.412Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"af9309a0-1c76-4aa1-8762-6d2289478240","error":"launching nodeclaim, creating instance, with fleet error(s), InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; InsufficientInstanceCapacity: We currently do not have sufficient m6a.2xlarge capacity in the Availability Zone you requested (us-east-1a). Our system will be working on provisioning additional capacity. You can currently get m6a.2xlarge capacity by not specifying an Availability Zone in your request or choosing us-east-1b, us-east-1c, us-east-1d, us-east-1f."}
+{"level":"ERROR","time":"2024-12-12T15:12:03.911Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"6c7dee6a-ae73-4ea3-bde5-37ebb9e530eb","error":"launching nodeclaim, creating instance, with fleet error(s), InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks."}
+{"level":"ERROR","time":"2024-12-12T15:13:18.502Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"df54adab-3fa0-489d-87f0-8cde4e5c6aea","error":"launching nodeclaim, creating instance, with fleet error(s), InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; InsufficientInstanceCapacity: We currently do not have sufficient m6i.2xlarge capacity in the Availability Zone you requested (us-east-1a). Our system will be working on provisioning additional capacity. You can currently get m6i.2xlarge capacity by not specifying an Availability Zone in your request or choosing us-east-1b, us-east-1c, us-east-1d, us-east-1f.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks."}
+{"level":"ERROR","time":"2024-12-12T15:15:05.295Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"eed12066-db02-47c3-b7f5-9ac1391e6300","error":"launching nodeclaim, creating instance, with fleet error(s), InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks."}
+{"level":"ERROR","time":"2024-12-12T15:17:55.946Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"f5aaf0a6-abbb-445c-83e4-003d9ca5fb4a","error":"launching nodeclaim, creating instance, with fleet error(s), InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks."}
+{"level":"ERROR","time":"2024-12-12T15:22:54.012Z","logger":"controller","message":"Reconciler error","commit":"5bdf9c3","controller":"nodeclaim.lifecycle","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"b554f37e-40db-4e83-8db1-61fdb1e8d358","error":"launching nodeclaim, creating instance, with fleet error(s), InsufficientInstanceCapacity: There is no Spot capacity available that matches your request.; MaxSpotInstanceCountExceeded: Max spot instance count exceeded; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0448afcff858c49ae belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0dc816b719cb68fa2 belong to different networks.; InvalidParameter: Security group sg-0dd11268ac33262c0 and subnet subnet-0bca0429432b06162 belong to different networks."}
+{"level":"INFO","time":"2024-12-12T15:28:34.898Z","logger":"controller","message":"deleted nodeclaim","commit":"5bdf9c3","controller":"nodeclaim.termination","controllerGroup":"karpenter.sh","controllerKind":"NodeClaim","NodeClaim":{"name":"default-mlw94"},"namespace":"","name":"default-mlw94","reconcileID":"f28cd5c8-3ebc-423d-b9a5-98e4d17fa632","Node":{"name":""},"provider-id":""}
+
+CAS Logs:
+Failed to get logs
+
+Karpenter Pod Details:
+Name:                   karpenter
+Namespace:              kube-system
+CreationTimestamp:      Thu, 12 Dec 2024 16:02:04 +0100
+Labels:                 app.kubernetes.io/instance=karpenter
+                        app.kubernetes.io/managed-by=Helm
+                        app.kubernetes.io/name=karpenter
+                        app.kubernetes.io/version=1.0.0
+                        helm.sh/chart=karpenter-1.0.0
+Annotations:            deployment.kubernetes.io/revision: 1
+                        meta.helm.sh/release-name: karpenter
+                        meta.helm.sh/release-namespace: kube-system
+Selector:               app.kubernetes.io/instance=karpenter,app.kubernetes.io/name=karpenter
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  1 max unavailable, 25% max surge
+Pod Template:
+  Labels:           app.kubernetes.io/instance=karpenter
+                    app.kubernetes.io/name=karpenter
+  Service Account:  karpenter
+  Containers:
+   controller:
+    Image:           public.ecr.aws/karpenter/controller:1.0.0@sha256:1eb1073b9f4ed804634aabf320e4d6e822bb61c0f5ecfd9c3a88f05f1ca4c5c5
+    Ports:           8080/TCP, 8001/TCP, 8443/TCP, 8081/TCP
+    Host Ports:      0/TCP, 0/TCP, 0/TCP, 0/TCP
+    SeccompProfile:  RuntimeDefault
+    Limits:
+      cpu:     1
+      memory:  1Gi
+    Requests:
+      cpu:      1
+      memory:   1Gi
+    Liveness:   http-get http://:http/healthz delay=30s timeout=30s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:http/readyz delay=5s timeout=30s period=10s #success=1 #failure=3
+    Environment:
+      KUBERNETES_MIN_VERSION:      1.19.0-0
+      KARPENTER_SERVICE:           karpenter
+      WEBHOOK_PORT:                8443
+      WEBHOOK_METRICS_PORT:        8001
+      DISABLE_WEBHOOK:             false
+      LOG_LEVEL:                   info
+      METRICS_PORT:                8080
+      HEALTH_PROBE_PORT:           8081
+      SYSTEM_NAMESPACE:             (v1:metadata.namespace)
+      MEMORY_LIMIT:                1073741824 (limits.memory)
+      FEATURE_GATES:               SpotToSpotConsolidation=false
+      BATCH_MAX_DURATION:          10s
+      BATCH_IDLE_DURATION:         1s
+      CLUSTER_NAME:                karpenter-eks
+      CLUSTER_ENDPOINT:            https://A87E28D454E13B0A0251CEDD4A026EE7.gr7.us-east-1.eks.amazonaws.com
+      VM_MEMORY_OVERHEAD_PERCENT:  0.075
+      INTERRUPTION_QUEUE:          Karpenter-karpenter-eks
+      RESERVED_ENIS:               0
+    Mounts:                        <none>
+  Volumes:                         <none>
+  Topology Spread Constraints:     topology.kubernetes.io/zone:DoNotSchedule when max skew 1 is exceeded for selector app.kubernetes.io/instance=karpenter,app.kubernetes.io/name=karpenter
+  Priority Class Name:             system-cluster-critical
+  Node-Selectors:                  kubernetes.io/os=linux
+  Tolerations:                     CriticalAddonsOnly op=Exists
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   karpenter-6f7df5d5d7 (1/1 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  28m   deployment-controller  Scaled up replica set karpenter-6f7df5d5d7 to 1
+
+CAS Pod Details:
+Failed to get pod details
+
+Karpenter Resources:

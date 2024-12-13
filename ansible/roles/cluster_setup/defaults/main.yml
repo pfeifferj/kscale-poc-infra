@@ -1,0 +1,4 @@
+# IBM Cloud VPC and subnet configuration
+vpc_id: ""  # This should be set by the playbook
+subnet_ids:
+  us_south_1: ""  # This should be set by the playbook

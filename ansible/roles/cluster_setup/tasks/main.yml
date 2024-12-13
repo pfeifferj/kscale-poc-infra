@@ -195,8 +195,8 @@
               ]
             expander: "least-waste"
             scaleDownEnabled: "true"
-            scaleDownUnneededTime: "10m"
-            scaleDownDelayAfterAdd: "10m"
+            scaleDownUnneededTime: "2m"
+            scaleDownDelayAfterAdd: "2m"
             maxNodeProvisionTime: "120m"
             skipNodesWithSystemPods: "true"
             scanInterval: "1m"
@@ -236,15 +236,22 @@
             repository: ghcr.io/pfeifferj/karpenter-provider-ibm-cloud/controller
             tag: latest
             pullPolicy: IfNotPresent
-            digest: "sha256:8ba029dcbb96cf37016a4ecd60e72e5122c2f596ce3c39cbac7e9c04b418f2c3"
+            digest: "sha256:bee30a949bd6743f4da793f2de9f4799dba117d102521cfd7dba56b3d43080e0"
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
+      when: cloud_provider == 'iks'
+
+    - name: Template Karpenter NodeClass configuration
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/files/templates/karpenter-nodeclass.yaml.j2"
+        dest: "/tmp/karpenter-nodeclass.yaml"
       when: cloud_provider == 'iks'
 
     - name: Apply Karpenter NodeClass configuration
       kubernetes.core.k8s:
         state: present
-        src: "{{ playbook_dir }}/files/karpenter-nodeclass.yaml"
+        src: "/tmp/karpenter-nodeclass.yaml"
+        wait: true
       environment:
         KUBECONFIG: "{{ lookup('vars', 'KUBECONFIG_IKS_KARPENTER') }}"
       when: cloud_provider == 'iks'

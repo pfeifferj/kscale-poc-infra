@@ -1,0 +1,164 @@
+All Pods Across Namespaces:
+NAMESPACE     NAME                                                     READY   STATUS    RESTARTS   AGE     IP            NODE                         NOMINATED NODE   READINESS GATES
+kube-system   aws-node-7jzjp                                           2/2     Running   0          5m7s    10.0.7.37     ip-10-0-7-37.ec2.internal    <none>           <none>
+kube-system   aws-node-dz7pd                                           2/2     Running   0          5m      10.0.44.11    ip-10-0-44-11.ec2.internal   <none>           <none>
+kube-system   aws-node-mqj5b                                           2/2     Running   0          5m3s    10.0.24.86    ip-10-0-24-86.ec2.internal   <none>           <none>
+kube-system   coredns-54d6f577c6-2vqrx                                 1/1     Running   0          10m     10.0.24.198   ip-10-0-24-86.ec2.internal   <none>           <none>
+kube-system   coredns-54d6f577c6-8kk2s                                 1/1     Running   0          10m     10.0.17.6     ip-10-0-24-86.ec2.internal   <none>           <none>
+kube-system   eks-pod-identity-agent-82kbv                             1/1     Running   0          5m8s    10.0.44.11    ip-10-0-44-11.ec2.internal   <none>           <none>
+kube-system   eks-pod-identity-agent-kkdjx                             1/1     Running   0          5m8s    10.0.7.37     ip-10-0-7-37.ec2.internal    <none>           <none>
+kube-system   eks-pod-identity-agent-llrc5                             1/1     Running   0          5m8s    10.0.24.86    ip-10-0-24-86.ec2.internal   <none>           <none>
+kube-system   karpenter-8f75b797f-j4gvc                                1/1     Running   0          4m16s   10.0.5.115    ip-10-0-7-37.ec2.internal    <none>           <none>
+kube-system   kube-proxy-2fbt6                                         1/1     Running   0          5m57s   10.0.24.86    ip-10-0-24-86.ec2.internal   <none>           <none>
+kube-system   kube-proxy-rzsfs                                         1/1     Running   0          5m57s   10.0.44.11    ip-10-0-44-11.ec2.internal   <none>           <none>
+kube-system   kube-proxy-xtrss                                         1/1     Running   0          5m58s   10.0.7.37     ip-10-0-7-37.ec2.internal    <none>           <none>
+monitoring    alertmanager-prometheus-operator-kube-p-alertmanager-0   2/2     Running   0          2m16s   10.0.27.135   ip-10-0-24-86.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-kube-p-operator-6b795b97b6-g4hpb     1/1     Running   0          2m22s   10.0.41.223   ip-10-0-44-11.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-kube-state-metrics-7d7756cc6-qx9lg   1/1     Running   0          2m22s   10.0.37.107   ip-10-0-44-11.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-prometheus-node-exporter-f6275       1/1     Running   0          2m23s   10.0.24.86    ip-10-0-24-86.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-prometheus-node-exporter-fvk8s       1/1     Running   0          2m23s   10.0.44.11    ip-10-0-44-11.ec2.internal   <none>           <none>
+monitoring    prometheus-operator-prometheus-node-exporter-nbh7g       1/1     Running   0          2m23s   10.0.7.37     ip-10-0-7-37.ec2.internal    <none>           <none>
+monitoring    prometheus-prometheus-operator-kube-p-prometheus-0       2/2     Running   0          2m16s   10.0.34.186   ip-10-0-44-11.ec2.internal   <none>           <none>
+
+Karpenter Pods Status:
+NAMESPACE     NAME                                                     READY   STATUS    RESTARTS   AGE
+kube-system   aws-node-7jzjp                                           2/2     Running   0          4m5s
+kube-system   aws-node-dz7pd                                           2/2     Running   0          3m58s
+kube-system   aws-node-mqj5b                                           2/2     Running   0          4m1s
+kube-system   coredns-54d6f577c6-2vqrx                                 1/1     Running   0          9m9s
+kube-system   coredns-54d6f577c6-8kk2s                                 1/1     Running   0          9m9s
+kube-system   eks-pod-identity-agent-82kbv                             1/1     Running   0          4m6s
+kube-system   eks-pod-identity-agent-kkdjx                             1/1     Running   0          4m6s
+kube-system   eks-pod-identity-agent-llrc5                             1/1     Running   0          4m6s
+kube-system   karpenter-8f75b797f-j4gvc                                1/1     Running   0          3m14s
+kube-system   kube-proxy-2fbt6                                         1/1     Running   0          4m55s
+kube-system   kube-proxy-rzsfs                                         1/1     Running   0          4m55s
+kube-system   kube-proxy-xtrss                                         1/1     Running   0          4m56s
+monitoring    alertmanager-prometheus-operator-kube-p-alertmanager-0   2/2     Running   0          74s
+monitoring    prometheus-operator-kube-p-operator-6b795b97b6-g4hpb     1/1     Running   0          80s
+monitoring    prometheus-operator-kube-state-metrics-7d7756cc6-qx9lg   1/1     Running   0          80s
+monitoring    prometheus-operator-prometheus-node-exporter-f6275       1/1     Running   0          81s
+monitoring    prometheus-operator-prometheus-node-exporter-fvk8s       1/1     Running   0          81s
+monitoring    prometheus-operator-prometheus-node-exporter-nbh7g       1/1     Running   0          81s
+monitoring    prometheus-prometheus-operator-kube-p-prometheus-0       2/2     Running   0          74s
+
+CAS Pods Status:
+NAMESPACE     NAME                                                     READY   STATUS    RESTARTS   AGE
+cas           cas-aws-cluster-autoscaler-5bd47d57d6-wm46f              1/1     Running   0          8s
+kube-system   aws-node-dpkgc                                           2/2     Running   0          4m25s
+kube-system   aws-node-ffgsw                                           2/2     Running   0          4m21s
+kube-system   aws-node-ksm94                                           2/2     Running   0          4m17s
+kube-system   coredns-54d6f577c6-rfmk2                                 1/1     Running   0          9m52s
+kube-system   coredns-54d6f577c6-s7m24                                 1/1     Running   0          9m52s
+kube-system   eks-pod-identity-agent-46q26                             1/1     Running   0          4m28s
+kube-system   eks-pod-identity-agent-qp8dk                             1/1     Running   0          4m28s
+kube-system   eks-pod-identity-agent-wkq85                             1/1     Running   0          4m28s
+kube-system   kube-proxy-2kqc5                                         1/1     Running   0          5m8s
+kube-system   kube-proxy-7p6z9                                         1/1     Running   0          5m2s
+kube-system   kube-proxy-tszfh                                         1/1     Running   0          5m8s
+monitoring    alertmanager-prometheus-operator-kube-p-alertmanager-0   2/2     Running   0          26s
+monitoring    prometheus-operator-kube-p-operator-6b795b97b6-4rgk2     1/1     Running   0          31s
+monitoring    prometheus-operator-kube-state-metrics-7d7756cc6-cwhpt   1/1     Running   0          31s
+monitoring    prometheus-operator-prometheus-node-exporter-dslnz       1/1     Running   0          31s
+monitoring    prometheus-operator-prometheus-node-exporter-l8h52       1/1     Running   0          31s
+monitoring    prometheus-operator-prometheus-node-exporter-wzpbz       1/1     Running   0          31s
+monitoring    prometheus-prometheus-operator-kube-p-prometheus-0       2/2     Running   0          25s
+
+Karpenter Pods in Namespace:
+NAMESPACE     NAME                        READY   STATUS    RESTARTS   AGE
+kube-system   karpenter-8f75b797f-j4gvc   1/1     Running   0          4m19s
+
+CAS Pods in Namespace:
+
+
+Karpenter Logs:
+{"level":"INFO","time":"2024-12-12T16:19:47.956Z","logger":"controller","message":"Starting workers","commit":"5bdf9c3","controller":"nodeclass.termination","controllerGroup":"karpenter.k8s.aws","controllerKind":"EC2NodeClass","worker count":10}
+{"level":"INFO","time":"2024-12-12T16:19:47.956Z","logger":"controller","message":"Starting workers","commit":"5bdf9c3","controller":"metrics.nodepool","controllerGroup":"karpenter.sh","controllerKind":"NodePool","worker count":1}
+{"level":"ERROR","time":"2024-12-12T16:19:48.221Z","logger":"webhook.ConversionWebhook","message":"Reconcile error","commit":"5bdf9c3","knative.dev/traceid":"d1b87d77-3746-4f0b-b568-fb1676e0cb37","knative.dev/key":"nodepools.karpenter.sh","duration":"142.796924ms","error":"failed to update webhook: Operation cannot be fulfilled on customresourcedefinitions.apiextensions.k8s.io \"nodepools.karpenter.sh\": the object has been modified; please apply your changes to the latest version and try again"}
+{"level":"ERROR","time":"2024-12-12T16:19:57.483Z","logger":"webhook","message":"http: TLS handshake error from 10.0.53.249:32856: EOF\n","commit":"5bdf9c3"}
+{"level":"ERROR","time":"2024-12-12T16:19:57.488Z","logger":"webhook","message":"http: TLS handshake error from 10.0.53.249:32880: EOF\n","commit":"5bdf9c3"}
+{"level":"INFO","time":"2024-12-12T16:19:57.554Z","logger":"controller","message":"discovered ssm parameter","commit":"5bdf9c3","controller":"nodeclass.status","controllerGroup":"karpenter.k8s.aws","controllerKind":"EC2NodeClass","EC2NodeClass":{"name":"default"},"namespace":"","name":"default","reconcileID":"d3ac2d2b-9419-4798-9bd3-b84c881129ef","parameter":"/aws/service/eks/optimized-ami/1.29/amazon-linux-2023/x86_64/standard/recommended/image_id","value":"ami-005f3ac20561f7619"}
+{"level":"INFO","time":"2024-12-12T16:19:57.579Z","logger":"controller","message":"discovered ssm parameter","commit":"5bdf9c3","controller":"nodeclass.status","controllerGroup":"karpenter.k8s.aws","controllerKind":"EC2NodeClass","EC2NodeClass":{"name":"default"},"namespace":"","name":"default","reconcileID":"d3ac2d2b-9419-4798-9bd3-b84c881129ef","parameter":"/aws/service/eks/optimized-ami/1.29/amazon-linux-2023/x86_64/nvidia/recommended/image_id","value":"ami-0c86724945be3998a"}
+{"level":"INFO","time":"2024-12-12T16:19:57.595Z","logger":"controller","message":"discovered ssm parameter","commit":"5bdf9c3","controller":"nodeclass.status","controllerGroup":"karpenter.k8s.aws","controllerKind":"EC2NodeClass","EC2NodeClass":{"name":"default"},"namespace":"","name":"default","reconcileID":"d3ac2d2b-9419-4798-9bd3-b84c881129ef","parameter":"/aws/service/eks/optimized-ami/1.29/amazon-linux-2023/x86_64/neuron/recommended/image_id","value":"ami-0ed07a09d62506cf6"}
+{"level":"INFO","time":"2024-12-12T16:19:57.621Z","logger":"controller","message":"discovered ssm parameter","commit":"5bdf9c3","controller":"nodeclass.status","controllerGroup":"karpenter.k8s.aws","controllerKind":"EC2NodeClass","EC2NodeClass":{"name":"default"},"namespace":"","name":"default","reconcileID":"d3ac2d2b-9419-4798-9bd3-b84c881129ef","parameter":"/aws/service/eks/optimized-ami/1.29/amazon-linux-2023/arm64/standard/recommended/image_id","value":"ami-0f40731c20c4f4d43"}
+{"level":"ERROR","time":"2024-12-12T16:19:57.903Z","logger":"webhook","message":"http: TLS handshake error from 10.0.53.249:32898: EOF\n","commit":"5bdf9c3"}
+
+CAS Logs:
+Failed to get logs
+
+Karpenter Pod Details:
+Name:                   karpenter
+Namespace:              kube-system
+CreationTimestamp:      Thu, 12 Dec 2024 17:19:45 +0100
+Labels:                 app.kubernetes.io/instance=karpenter
+                        app.kubernetes.io/managed-by=Helm
+                        app.kubernetes.io/name=karpenter
+                        app.kubernetes.io/version=1.0.0
+                        helm.sh/chart=karpenter-1.0.0
+Annotations:            deployment.kubernetes.io/revision: 1
+                        meta.helm.sh/release-name: karpenter
+                        meta.helm.sh/release-namespace: kube-system
+Selector:               app.kubernetes.io/instance=karpenter,app.kubernetes.io/name=karpenter
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  1 max unavailable, 25% max surge
+Pod Template:
+  Labels:           app.kubernetes.io/instance=karpenter
+                    app.kubernetes.io/name=karpenter
+  Service Account:  karpenter
+  Containers:
+   controller:
+    Image:           public.ecr.aws/karpenter/controller:1.0.0@sha256:1eb1073b9f4ed804634aabf320e4d6e822bb61c0f5ecfd9c3a88f05f1ca4c5c5
+    Ports:           8080/TCP, 8001/TCP, 8443/TCP, 8081/TCP
+    Host Ports:      0/TCP, 0/TCP, 0/TCP, 0/TCP
+    SeccompProfile:  RuntimeDefault
+    Limits:
+      cpu:     1
+      memory:  1Gi
+    Requests:
+      cpu:      1
+      memory:   1Gi
+    Liveness:   http-get http://:http/healthz delay=30s timeout=30s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:http/readyz delay=5s timeout=30s period=10s #success=1 #failure=3
+    Environment:
+      KUBERNETES_MIN_VERSION:      1.19.0-0
+      KARPENTER_SERVICE:           karpenter
+      WEBHOOK_PORT:                8443
+      WEBHOOK_METRICS_PORT:        8001
+      DISABLE_WEBHOOK:             false
+      LOG_LEVEL:                   info
+      METRICS_PORT:                8080
+      HEALTH_PROBE_PORT:           8081
+      SYSTEM_NAMESPACE:             (v1:metadata.namespace)
+      MEMORY_LIMIT:                1073741824 (limits.memory)
+      FEATURE_GATES:               SpotToSpotConsolidation=false
+      BATCH_MAX_DURATION:          10s
+      BATCH_IDLE_DURATION:         1s
+      CLUSTER_NAME:                karpenter-eks
+      CLUSTER_ENDPOINT:            https://F3F2BFDB9F7FE0206ECB7FC3980EC1D1.gr7.us-east-1.eks.amazonaws.com
+      VM_MEMORY_OVERHEAD_PERCENT:  0.075
+      INTERRUPTION_QUEUE:          Karpenter-karpenter-eks
+      RESERVED_ENIS:               0
+    Mounts:                        <none>
+  Volumes:                         <none>
+  Topology Spread Constraints:     topology.kubernetes.io/zone:DoNotSchedule when max skew 1 is exceeded for selector app.kubernetes.io/instance=karpenter,app.kubernetes.io/name=karpenter
+  Priority Class Name:             system-cluster-critical
+  Node-Selectors:                  kubernetes.io/os=linux
+  Tolerations:                     CriticalAddonsOnly op=Exists
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   karpenter-8f75b797f (1/1 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  4m23s  deployment-controller  Scaled up replica set karpenter-8f75b797f to 1
+
+CAS Pod Details:
+Failed to get pod details
+
+Karpenter Resources:
